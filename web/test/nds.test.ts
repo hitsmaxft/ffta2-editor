@@ -38,6 +38,15 @@ describe('NDS ROM filesystem', () => {
     }
   });
 
+  it('reads the +0x1c compressed-overlay marker and decompresses to RAM size', () => {
+    const rom = loadRom();
+    const ovl = rom.overlays.find((o) => o.id === 11)!;
+    const raw = rom.files[ovl.fileId];
+    expect(ovl.compressed).toBe(true);
+    expect(raw.end - raw.start).toBe(1116); // compressed payload in the fixture
+    expect(rom.readOverlay(11).remaining()).toBe(6000); // decompressed payload
+  });
+
   it('in-place patch keeps untouched bytes and updates changed files', () => {
     const rom = loadRom();
     const original = fixture('nds/test.nds');

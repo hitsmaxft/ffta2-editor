@@ -96,11 +96,21 @@ export class NdsRom {
     const ovlSize = v.getUint32(0x54, true);
     for (let i = 0; i < ovlSize / 32; i++) {
       const base = ovlOffset + i * 32;
-      const fileIdWord = v.getUint32(base + 24, true);
+      const fileIdWord = v.getUint32(base + 0x18, true);
+      const reservedWord = v.getUint32(base + 0x1c, true);
+      // Hardware/tooling variants disagree on where the compressed-overlay
+      // marker lives: the classic NDS layout puts bit 24 in the File ID word
+      // (+0x18), while some toolchains/fixtures use the +0x1c word (either
+      // bit 24 or a plain boolean). Accept all of them without treating an
+      // unrelated reserved value as compressed.
+      const compressed =
+        (fileIdWord & 0x01000000) !== 0 ||
+        (reservedWord & 0x01000000) !== 0 ||
+        reservedWord === 1;
       this.overlays.push({
         id: v.getUint32(base, true),
         fileId: fileIdWord & 0xffffff,
-        compressed: (fileIdWord & 0x1000000) !== 0,
+        compressed,
         ramAddress: v.getUint32(base + 4, true),
         ramSize: v.getUint32(base + 8, true),
       });
@@ -202,8 +212,12 @@ export class NdsRom {
       if (!ovl) throw new Error(`Overlay ${overlayId} not found`);
       fileChanges.set(ovl.fileId, content);
       if (ovl.compressed) {
-        const entry = new Uint8Array(4);
-        new DataView(entry.buffer).setUint32(0, ovl.fileId, true); // clear compression flag
+        // Store the decompressed replacement: clear both possible compression
+        // marker locations (+0x18 bit 24 and the +0x1c word).
+        const entry = new Uint8Array(8);
+        const ev = new DataView(entry.buffer);
+        ev.setUint32(0, ovl.fileId, true);
+        ev.setUint32(4, 0, true);
         const ovlOffset = this.data.view.getUint32(0x50, true);
         const idx = this.overlays.indexOf(ovl);
         ovlTableWrites.push({ position: ovlOffset + idx * 32 + 24, data: entry });
