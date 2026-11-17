@@ -36,7 +36,7 @@ logs/*
 web/node_modules/
 web/dist/
 web/test/ts-output/
-web/.browser_profile/
+web/.browser_profile
 node_modules/
 
 # Local-only reference fixture containing game-derived ability names.
