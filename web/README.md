@@ -49,6 +49,8 @@ npm run dev -- --open '/?rom=/data/extracted/your-rom.nds'
 - Deep schema-free form UI: primitive fields, nested records, arrays, bit flags
   and hex byte arrays are all editable. Read-only domains (sprites/maps) are
   still inspectable.
+- UI language switch: English / 简体中文, persisted in localStorage and auto-detected
+  from the browser locale.
 - Save uses a minimal in-place patch plan. Changed files that fit their original
   FAT span are overwritten; grown files are appended and the FAT/header updated.
 - The optional ARM9/overlay code patches from the Java `PatchesController`

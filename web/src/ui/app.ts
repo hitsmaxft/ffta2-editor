@@ -18,6 +18,7 @@ import {
   auctionGrandPrizeTab, mapTab, unitSpriteTab, topSpriteTab, faceTab,
 } from './modelEditor';
 import { el, clear } from './widgets';
+import { applyTranslations, getLanguage, setLanguage, t, Language } from './i18n';
 
 const TABS: EditorTab[] = [
   textTab,
@@ -100,10 +101,10 @@ function refreshButtons(): void {
   ($('save-as-btn') as HTMLButtonElement).disabled = !loaded;
   $('file-name').textContent = state.opened
     ? `${state.opened.name}${state.dirty ? ' •' : ''}`
-    : 'No ROM loaded';
+    : t('file.noRom');
   $('word-table-name').textContent = state.wordTable
-    ? `Word table: ${state.wordTable.name}`
-    : 'No word table';
+    ? t('file.wordTable', { name: state.wordTable.name })
+    : t('file.noWordTable');
 }
 
 function renderTabs(): void {
@@ -114,7 +115,7 @@ function renderTabs(): void {
     if (!tab.available(state.data)) continue;
     const btn = el('button', {
       class: `tab${tab.id === state.activeTab ? ' active' : ''}`,
-      text: tab.label,
+      text: tab.label(),
     });
     btn.onclick = () => { state.activeTab = tab.id; renderTabs(); renderContent(); };
     nav.append(btn);
@@ -126,7 +127,7 @@ function renderContent(): void {
   clear(content);
   if (!state.data) {
     content.append(el('div', { class: 'empty-state' }, [
-      el('p', { text: 'Open a Final Fantasy Tactics Advance 2 ROM (.nds) to begin editing.' }),
+      el('p', { text: t('empty.open') }),
     ]));
     return;
   }
@@ -134,7 +135,7 @@ function renderContent(): void {
   tab.render(content, state.data, markDirty);
   if (state.data.warnings.length > 0) {
     const details = el('details', { class: 'warnings' });
-    details.append(el('summary', { text: `${state.data.warnings.length} load warnings` }));
+    details.append(el('summary', { text: t('warnings.count', { count: state.data.warnings.length }) }));
     const ul = el('ul');
     for (const w of state.data.warnings) ul.append(el('li', { text: w }));
     details.append(ul);
@@ -143,7 +144,7 @@ function renderContent(): void {
 }
 
 async function applyOpened(opened: OpenedRom): Promise<void> {
-  setStatus(`Loading ${opened.name}…`);
+  setStatus(t('status.loading', { name: opened.name }));
   const data = loadRom(opened.bytes);
   data.wordTable = state.wordTable;
   loadAll(data);
@@ -153,7 +154,7 @@ async function applyOpened(opened: OpenedRom): Promise<void> {
   state.activeTab = TABS.find((t) => t.available(data))?.id ?? TABS[0].id;
   let autoLoadedTable = false;
   if (!data.wordTable && hasDoubleByteText(data)) {
-    setStatus('Chinese double-byte text detected — loading FFTA2-US-CHS V4.1 default word table…');
+    setStatus(t('status.detectingChinese'));
     const table = await loadDefaultWordTable();
     if (table) {
       state.wordTable = table;
@@ -167,13 +168,11 @@ async function applyOpened(opened: OpenedRom): Promise<void> {
   renderTabs();
   renderContent();
   if (autoLoadedTable) {
-    setStatus(`Loaded ${opened.name} — Chinese text decoded with the default FFTA2-US-CHS V4.1 word table.`);
+    setStatus(t('status.loadedDefaultTable', { name: opened.name }));
   } else if (!data.wordTable && hasDoubleByteText(data)) {
-    setStatus(
-      `Loaded ${opened.name} — Chinese double-byte text detected. Default word table could not be fetched; use "Word Table…" to load glyphs.json manually.`
-    );
+    setStatus(t('status.chineseNeedTable', { name: opened.name }));
   } else {
-    setStatus(`Loaded ${opened.name} — ${data.archive?.files.length ?? 0} archive entries.`);
+    setStatus(t('status.loadedEntries', { name: opened.name, count: data.archive?.files.length ?? 0 }));
   }
 }
 
@@ -186,14 +185,14 @@ async function loadWordTableFile(file: File): Promise<void> {
     renderContent();
   }
   refreshButtons();
-  setStatus(
-    `Loaded word table "${table.name}" (${table.decodeMap.size + table.singleDecodeMap.size} entries).` +
-      (state.data ? ' Text tables were re-decoded.' : ' It will be used for the next opened ROM.')
-  );
+  setStatus(t(state.data ? 'status.wordTableLoaded' : 'status.wordTableLoadedNext', {
+    name: table.name,
+    count: table.decodeMap.size + table.singleDecodeMap.size,
+  }));
 }
 
 function openWordTable(): void {
-  if (state.data && state.dirty && !confirm('Loading a word table re-decodes the text tables and discards unsaved text edits. Continue?')) {
+  if (state.data && state.dirty && !confirm(t('status.wordTableConfirm'))) {
     return;
   }
   ($('word-table-input') as HTMLInputElement).click();
@@ -210,7 +209,7 @@ async function openRom(): Promise<void> {
     if (!opened) return;
     await applyOpened(opened);
   } catch (err) {
-    setStatus(`Failed to load: ${(err as Error).message}`);
+    setStatus(t('status.failedLoad', { message: (err as Error).message }));
     console.error(err);
   }
 }
@@ -218,13 +217,13 @@ async function openRom(): Promise<void> {
 async function save(asNew: boolean): Promise<void> {
   if (!state.data || !state.opened) return;
   try {
-    setStatus('Saving…');
+    setStatus(t('status.saving'));
     saveAll(state.data);
     const plan = buildSavePlan(state.data);
     const canInPlace = !asNew && state.opened.handle && supportsFsAccess();
     if (canInPlace) {
       await saveInPlace(state.opened.handle!, plan);
-      setStatus(`Saved in place — ${plan.writes.length} changed byte span${plan.writes.length === 1 ? '' : 's'}.`);
+      setStatus(t('status.savedInPlace', { count: plan.writes.length }));
     } else {
       const bytes = saveRom(state.data);
       const name = state.opened.name;
@@ -233,12 +232,12 @@ async function save(asNew: boolean): Promise<void> {
       } else {
         downloadRom(name, bytes);
       }
-      setStatus(`Saved ${bytes.length.toLocaleString()} bytes — ${plan.writes.length} changed byte span${plan.writes.length === 1 ? '' : 's'}.`);
+      setStatus(t('status.savedDownload', { bytes: bytes.length.toLocaleString(), count: plan.writes.length }));
     }
     state.dirty = false;
     refreshButtons();
   } catch (err) {
-    setStatus(`Save failed: ${(err as Error).message}`);
+    setStatus(t('status.failedSave', { message: (err as Error).message }));
     console.error(err);
   }
 }
@@ -254,12 +253,27 @@ export function boot(): void {
     try {
       await loadWordTableFile(file);
     } catch (err) {
-      setStatus(`Failed to load word table: ${(err as Error).message}`);
+      setStatus(t('status.failedWordTable', { message: (err as Error).message }));
       console.error(err);
     }
   };
   $('save-btn').onclick = () => void save(false);
   $('save-as-btn').onclick = () => void save(true);
+
+  const langSelect = $('lang-select') as HTMLSelectElement;
+  langSelect.value = getLanguage();
+  langSelect.onchange = () => {
+    setLanguage(langSelect.value as Language);
+    renderTabs();
+    renderContent();
+    refreshButtons();
+    if (!state.data) setStatus(t('status.ready'));
+    else if (state.opened) {
+      setStatus(t('status.loadedEntries', { name: state.opened.name, count: state.data.archive?.files.length ?? 0 }));
+    }
+  };
+
+  applyTranslations();
   refreshButtons();
   renderContent();
 
@@ -274,7 +288,7 @@ export function boot(): void {
           const name = romUrl.split('/').pop() ?? 'rom.nds';
           await applyOpened({ bytes, name, handle: null });
         } catch (err) {
-          setStatus(`Failed to load: ${(err as Error).message}`);
+          setStatus(t('status.failedLoad', { message: (err as Error).message }));
           console.error(err);
         }
       })();

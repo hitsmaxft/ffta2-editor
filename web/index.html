@@ -11,24 +11,28 @@
       <header class="topbar">
         <h1>FFTA2 Editor</h1>
         <div class="actions">
-          <button id="open-btn">Open ROM…</button>
-          <button id="word-table-btn">Word Table…</button>
-          <button id="save-btn" disabled>Save</button>
-          <button id="save-as-btn" disabled>Save As…</button>
-          <span id="file-name" class="file-name">No ROM loaded</span>
-          <span id="word-table-name" class="file-name">No word table</span>
+          <button id="open-btn" data-i18n="button.openRom">Open ROM…</button>
+          <button id="word-table-btn" data-i18n="button.wordTable">Word Table…</button>
+          <button id="save-btn" disabled data-i18n="button.save">Save</button>
+          <button id="save-as-btn" disabled data-i18n="button.saveAs">Save As…</button>
+          <span id="file-name" class="file-name" data-i18n="file.noRom">No ROM loaded</span>
+          <span id="word-table-name" class="file-name" data-i18n="file.noWordTable">No word table</span>
+          <select id="lang-select" class="lang-select" data-i18n-title="lang.label" aria-label="Language">
+            <option value="en">English</option>
+            <option value="zh-CN">简体中文</option>
+          </select>
         </div>
       </header>
       <nav id="tabs" class="tabs"></nav>
       <main id="content" class="content">
         <div class="empty-state">
-          <p>Open a Final Fantasy Tactics Advance 2 ROM (.nds) to begin editing.</p>
-          <p class="hint">Official ROM: open the .nds directly.</p>
-          <p class="hint">Chinese ROM: open the .nds; the official FFTA2-US-CHS V4.1 word table is fetched automatically. Use <strong>Word Table…</strong> to load a local <code>glyphs.json</code> if you are offline.</p>
-          <p class="hint">Saving uses minimal in-place writes when your browser supports the File System Access API; other browsers download a patched ROM.</p>
+          <p data-i18n="empty.open">Open a Final Fantasy Tactics Advance 2 ROM (.nds) to begin editing.</p>
+          <p class="hint" data-i18n="empty.official">Official ROM: open the .nds directly.</p>
+          <p class="hint" data-i18n="empty.chinese">Chinese ROM: open the .nds; the official FFTA2-US-CHS V4.1 word table is fetched automatically. Use Word Table… for a local glyphs.json if offline.</p>
+          <p class="hint" data-i18n="empty.save">Saving uses minimal in-place writes when your browser supports the File System Access API; other browsers download a patched ROM.</p>
         </div>
       </main>
-      <footer id="status" class="status">Ready.</footer>
+      <footer id="status" class="status" data-i18n="status.ready">Ready.</footer>
     </div>
     <input type="file" id="file-input" accept=".nds" hidden />
     <input type="file" id="word-table-input" accept=".json,.tsv,.csv,.tbl,.txt" hidden />

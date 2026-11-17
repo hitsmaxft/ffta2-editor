@@ -2,17 +2,18 @@
 
 import { RomData } from '../data/romData';
 import { el, clear, recordList, searchBox, textArea } from './widgets';
+import { t } from './i18n';
 
 export interface EditorTab {
   id: string;
-  label: string;
+  label(): string;
   available(data: RomData): boolean;
   render(container: HTMLElement, data: RomData, markDirty: () => void): void;
 }
 
 export const textTab: EditorTab = {
   id: 'text',
-  label: 'Text',
+  label() { return t('tab.text'); },
   available: (data) => data.messageList.length > 0,
   render(container, data, markDirty) {
     let tableIdx = 0;
@@ -31,7 +32,7 @@ export const textTab: EditorTab = {
       if (!table) return;
       right.append(el('h2', { class: 'section-title', text: table.name }));
       if (table.strings.length === 0) {
-        right.append(el('div', { class: 'notice', text: 'This table is empty.' }));
+        right.append(el('div', { class: 'notice', text: t('text.emptyTable') }));
         return;
       }
       const inner = el('div', { class: 'split' });
@@ -42,19 +43,19 @@ export const textTab: EditorTab = {
 
       const { list, setSelected } = recordList({
         count: table.strings.length,
-        label: (i) => table.strings[i].string || '(empty)',
+        label: (i) => table.strings[i].string || t('text.emptyString'),
         onSelect: (i) => { stringIdx = i; setSelected(i); renderEdit(); },
       });
-      strPane.append(el('p', { class: 'pane-title', text: `${table.strings.length} strings` }), list);
+      strPane.append(el('p', { class: 'pane-title', text: t('text.strings', { count: table.strings.length }) }), list);
 
       const renderEdit = () => {
         clear(editPane);
         const entry = table.strings[stringIdx];
         if (!entry) return;
-        editPane.append(el('p', { class: 'pane-title', text: `String #${entry.id}` }));
+        editPane.append(el('p', { class: 'pane-title', text: t('text.stringId', { id: entry.id }) }));
         const ta = textArea(entry.string, (v) => { entry.string = v; markDirty(); });
         editPane.append(ta);
-        editPane.append(el('p', { class: 'hint', text: 'Control codes use \\var2:XX\\, \\end\\, \\endPage\\ syntax. Unknown bytes appear as <unknown:XX> or <unknown:XXXX>. For Chinese ROMs load an external word table from the toolbar; unknown double-byte codes remain reversible.' }));
+        editPane.append(el('p', { class: 'hint', text: t('text.controlHint') }));
       };
 
       setSelected(stringIdx);
@@ -63,8 +64,8 @@ export const textTab: EditorTab = {
 
     const renderLeft = () => {
       clear(left);
-      left.append(el('p', { class: 'pane-title', text: 'Message tables' }));
-      left.append(searchBox('Filter tables…', (v) => { tableFilter = v; renderLeft(); }));
+      left.append(el('p', { class: 'pane-title', text: t('text.tables') }));
+      left.append(searchBox(t('text.filterTables'), (v) => { tableFilter = v; renderLeft(); }));
       const { list, setSelected } = recordList({
         count: data.messageList.length,
         filter: tableFilter,

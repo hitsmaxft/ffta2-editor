@@ -11,12 +11,13 @@ import { EditorTab } from './textEditor';
 import { el, clear, recordList, searchBox, numberInput, textInput, textArea } from './widgets';
 import { Flags } from '../data/model/flags';
 import { getAuctionInfoList, getLawBonusStoryRequirements, setLawBonusStoryRequirements } from '../data/controllers/item';
+import { t } from './i18n';
 
 type Rec = Record<string, unknown>;
 
 export interface ModelTabOpts {
   id: string;
-  label: string;
+  label(): string;
   list: (data: RomData) => Rec[];
   name?: (data: RomData, rec: Rec, index: number) => string;
   allowAdd?: boolean;
@@ -90,9 +91,9 @@ function renderFlags(flags: Flags, markDirty: () => void): HTMLElement {
   const box = el('div', { class: 'flags-box' });
   const head = el('div', { class: 'flags-head' });
   const total = flags.length * 8;
-  head.append(el('span', { text: `${flags.length} byte${flags.length === 1 ? '' : 's'} / ${total} bits` }));
-  const all = el('button', { type: 'button', text: 'Set all' });
-  const none = el('button', { type: 'button', text: 'Clear' });
+  head.append(el('span', { text: t('model.flagsSummary', { bytes: flags.length, bits: total }) }));
+  const all = el('button', { type: 'button', text: t('model.setAll') });
+  const none = el('button', { type: 'button', text: t('model.clear') });
   all.onclick = () => { for (let i = 0; i < total; i++) flags.set(i, true); markDirty(); grid.replaceChildren(...bitNodes()); };
   none.onclick = () => { for (let i = 0; i < total; i++) flags.set(i, false); markDirty(); grid.replaceChildren(...bitNodes()); };
   head.append(all, none);
@@ -117,7 +118,7 @@ function renderFlags(flags: Flags, markDirty: () => void): HTMLElement {
 function renderBytes(value: Uint8Array, onChange: (v: Uint8Array) => void, markDirty: () => void): HTMLElement {
   const box = el('div', { class: 'bytes-box' });
   if (value.length > MAX_EDITABLE_BYTES) {
-    box.append(el('p', { class: 'hint', text: `${value.length} bytes — read-only hex preview (too large for inline editing).` }));
+    box.append(el('p', { class: 'hint', text: t('model.bytesReadOnly', { count: value.length }) }));
     const pre = el('pre', { class: 'hex-preview' });
     pre.textContent = toHex(value.subarray(0, 256)) + (value.length > 256 ? '\n…' : '');
     box.append(pre);
@@ -131,7 +132,7 @@ function renderBytes(value: Uint8Array, onChange: (v: Uint8Array) => void, markD
     markDirty();
   });
   ta.classList.add('hex-input');
-  box.append(ta, el('p', { class: 'hint', text: 'Space-separated hexadecimal bytes.' }));
+  box.append(ta, el('p', { class: 'hint', text: t('model.hexHint') }));
   return box;
 }
 
@@ -171,7 +172,7 @@ function renderValue(
   if (Array.isArray(value)) {
     const arrayBox = el('div', { class: depth === 0 ? 'field-group full' : 'field-group nested' });
     const items = value as unknown[];
-    arrayBox.append(el('p', { class: 'hint', text: `${items.length} item${items.length === 1 ? '' : 's'}` }));
+    arrayBox.append(el('p', { class: 'hint', text: t('model.itemCount', { count: items.length }) }));
     items.forEach((item, index) => {
       const card = el('details', { class: 'array-item' });
       const summary = el('summary', { text: `${humanField(key)} #${index}` });
@@ -191,12 +192,12 @@ function renderValue(
       } else if (item instanceof Uint8Array) {
         card.append(renderBytes(item, (v) => { items[index] = v; markDirty(); }, markDirty));
       } else {
-        card.append(el('p', { class: 'hint', text: 'Unsupported value.' }));
+        card.append(el('p', { class: 'hint', text: t('model.unsupported') }));
       }
       arrayBox.append(card);
     });
     const actions = el('div', { class: 'row-actions' });
-    const add = el('button', { type: 'button', text: 'Add item' });
+    const add = el('button', { type: 'button', text: t('model.addItem') });
     add.onclick = () => {
       const template = items.length > 0 ? items[items.length - 1] : undefined;
       items.push(template === undefined ? 0 : blankClone(template));
@@ -209,7 +210,7 @@ function renderValue(
         parent.replaceChild(replacement, arrayBox);
       }
     };
-    const remove = el('button', { type: 'button', text: 'Remove last' });
+    const remove = el('button', { type: 'button', text: t('model.removeLastItem') });
     remove.disabled = items.length === 0;
     remove.onclick = () => {
       items.pop();
@@ -244,10 +245,10 @@ function renderRecord(detail: HTMLElement, data: RomData, opts: ModelTabOpts, re
 
   const title = opts.name?.(data, rec, selected) || `#${rec.id ?? selected}`;
   const header = el('div', { class: 'record-header' });
-  header.append(el('h2', { class: 'section-title', text: `${opts.label} · ${title}` }));
+  header.append(el('h2', { class: 'section-title', text: `${opts.label()} · ${title}` }));
   const actions = el('div', { class: 'row-actions' });
   if (opts.allowAdd) {
-    const add = el('button', { type: 'button', text: 'Add record' });
+    const add = el('button', { type: 'button', text: t('model.addRecord') });
     add.onclick = () => {
       const template = records.length > 0 ? records[records.length - 1] : undefined;
       const newRec = template === undefined ? {} : blankClone(template);
@@ -259,10 +260,10 @@ function renderRecord(detail: HTMLElement, data: RomData, opts: ModelTabOpts, re
     actions.append(add);
   }
   if (opts.allowRemove) {
-    const remove = el('button', { type: 'button', text: 'Remove last' });
+    const remove = el('button', { type: 'button', text: t('model.removeLastItem') });
     remove.disabled = records.length === 0;
     remove.onclick = () => {
-      if (!confirm(`Remove the last ${opts.label.toLowerCase()} record?`)) return;
+      if (!confirm(t('model.confirmRemove', { label: opts.label() }))) return;
       records.pop();
       markDirty();
       rerender();
@@ -279,13 +280,13 @@ function renderRecord(detail: HTMLElement, data: RomData, opts: ModelTabOpts, re
   }
   detail.append(form);
 
-  if ('id' in rec) detail.append(el('p', { class: 'hint', text: `Raw record id/index: ${String(rec.id)}` }));
+  if ('id' in rec) detail.append(el('p', { class: 'hint', text: t('model.rawId', { id: String(rec.id) }) }));
 }
 
 export function makeModelTab(opts: ModelTabOpts): EditorTab {
   return {
     id: opts.id,
-    label: opts.label,
+    label() { return opts.label(); },
     available: (data) => opts.list(data).length > 0,
     render(container, data, markDirty) {
       const records = opts.list(data);
@@ -312,8 +313,8 @@ export function makeModelTab(opts: ModelTabOpts): EditorTab {
 
       const renderLeft = () => {
         clear(left);
-        left.append(el('p', { class: 'pane-title', text: `${records.length} records` }));
-        left.append(searchBox('Filter…', (v) => { filter = v; renderLeft(); }));
+        left.append(el('p', { class: 'pane-title', text: t('model.records', { count: records.length }) }));
+        left.append(searchBox(t('model.filter'), (v) => { filter = v; renderLeft(); }));
         const { list, setSelected } = recordList({
           count: records.length,
           filter,
@@ -334,79 +335,79 @@ const nameAt = (table: { id: number; string: string }[] | undefined, id: number)
   table?.find((s) => s.id === id)?.string ?? '';
 
 export const jobTab = makeModelTab({
-  id: 'jobs', label: 'Jobs', allowAdd: true, allowRemove: true,
+  id: 'jobs', label: () => t('tab.jobs'), allowAdd: true, allowRemove: true,
   list: (d) => d.jobDataList as unknown as Rec[],
   name: (d, rec) => nameAt(d.jobNames, rec.id as number),
 });
 
 export const jobGroupTab = makeModelTab({
-  id: 'jobGroups', label: 'Job Groups', allowAdd: true, allowRemove: true,
+  id: 'jobGroups', label: () => t('tab.jobGroups'), allowAdd: true, allowRemove: true,
   list: (d) => d.jobGroupList as unknown as Rec[],
 });
 
 export const jobRequirementTab = makeModelTab({
-  id: 'jobRequirements', label: 'Job Requirements', allowAdd: true, allowRemove: true,
+  id: 'jobRequirements', label: () => t('tab.jobRequirements'), allowAdd: true, allowRemove: true,
   list: (d) => d.jobRequirementList as unknown as Rec[],
 });
 
 export const characterTab = makeModelTab({
-  id: 'characters', label: 'Characters', allowAdd: true, allowRemove: true,
+  id: 'characters', label: () => t('tab.characters'), allowAdd: true, allowRemove: true,
   list: (d) => d.characterList as unknown as Rec[],
   name: (d, rec) => nameAt(d.characterNames, rec.name as number),
 });
 
 export const abilityTab = makeModelTab({
-  id: 'abilities', label: 'Abilities', allowAdd: true, allowRemove: true,
+  id: 'abilities', label: () => t('tab.abilities'), allowAdd: true, allowRemove: true,
   list: (d) => d.activeAbilityList as unknown as Rec[],
   name: (d, rec) => nameAt(d.abilityNames, rec.id as number),
 });
 
 export const abilitySetTab = makeModelTab({
-  id: 'abilitySets', label: 'Ability Sets', allowAdd: true, allowRemove: true,
+  id: 'abilitySets', label: () => t('tab.abilitySets'), allowAdd: true, allowRemove: true,
   list: (d) => d.abilitySetList as unknown as Rec[],
   name: (d, rec) => nameAt(d.abilitySetNames, rec.id as number),
 });
 
 export const equipmentTab = makeModelTab({
-  id: 'equipment', label: 'Equipment', allowAdd: true, allowRemove: true,
+  id: 'equipment', label: () => t('tab.equipment'), allowAdd: true, allowRemove: true,
   list: (d) => d.equipmentList as unknown as Rec[],
   name: (d, rec) => nameAt(d.itemNames, rec.id as number),
 });
 
 export const consumableTab = makeModelTab({
-  id: 'consumables', label: 'Consumables', allowAdd: true, allowRemove: true,
+  id: 'consumables', label: () => t('tab.consumables'), allowAdd: true, allowRemove: true,
   list: (d) => d.consumableList as unknown as Rec[],
   name: (d, rec) => nameAt(d.itemNames, rec.id as number),
 });
 
 export const lootTab = makeModelTab({
-  id: 'loot', label: 'Loot', allowAdd: true, allowRemove: true,
+  id: 'loot', label: () => t('tab.loot'), allowAdd: true, allowRemove: true,
   list: (d) => d.lootList as unknown as Rec[],
   name: (d, rec) => nameAt(d.itemNames, rec.id as number),
 });
 
 export const itemTableTab = makeModelTab({
-  id: 'itemTables', label: 'Item Tables', allowAdd: true, allowRemove: true,
+  id: 'itemTables', label: () => t('tab.itemTables'), allowAdd: true, allowRemove: true,
   list: (d) => d.itemTableList as unknown as Rec[],
 });
 
 export const lawBonusTab = makeModelTab({
-  id: 'lawBonuses', label: 'Law Bonuses', allowAdd: true, allowRemove: true,
+  id: 'lawBonuses', label: () => t('tab.lawBonuses'), allowAdd: true, allowRemove: true,
   list: (d) => d.lawBonusList as unknown as Rec[],
   name: (d, rec) => nameAt(d.lawNames, rec.id as number),
 });
 
 export const lawRequirementTab: EditorTab = {
   id: 'lawRequirements',
-  label: 'Law Story Reqs',
+  label: () => t('tab.lawRequirements'),
   available: (d) => d.lawBonusList.length > 0,
   render(container, data, markDirty) {
     const values = getLawBonusStoryRequirements(data);
     const form = el('div', { class: 'form' });
-    form.append(el('h2', { class: 'section-title full', text: 'Law bonus story requirements' }));
-    form.append(el('p', { class: 'hint full', text: 'Four unsigned 16-bit story flags stored in arm9 at 0x11B650. Written back by saveLawBonus.' }));
+    form.append(el('h2', { class: 'section-title full', text: t('law.title') }));
+    form.append(el('p', { class: 'hint full', text: t('law.hint') }));
     for (let i = 0; i < 4; i++) {
-      form.append(el('label', { text: `Requirement ${i + 1}` }), numberInput(values[i], (v) => {
+      form.append(el('label', { text: t('law.requirement', { n: i + 1 }) }), numberInput(values[i], (v) => {
         values[i] = v;
         setLawBonusStoryRequirements(data, values);
         markDirty();
@@ -417,59 +418,59 @@ export const lawRequirementTab: EditorTab = {
 };
 
 export const formationTab = makeModelTab({
-  id: 'formations', label: 'Formations', allowAdd: true, allowRemove: true,
+  id: 'formations', label: () => t('tab.formations'), allowAdd: true, allowRemove: true,
   list: (d) => d.formationList as unknown as Rec[],
 });
 
 export const questTab = makeModelTab({
-  id: 'quests', label: 'Quests', allowAdd: true, allowRemove: true,
+  id: 'quests', label: () => t('tab.quests'), allowAdd: true, allowRemove: true,
   list: (d) => d.questDataList as unknown as Rec[],
   name: (d, rec) => nameAt(d.questNames, rec.id as number),
 });
 
 export const bazaarTab = makeModelTab({
-  id: 'bazaar', label: 'Bazaar', allowAdd: true, allowRemove: true,
+  id: 'bazaar', label: () => t('tab.bazaar'), allowAdd: true, allowRemove: true,
   list: (d) => d.bazaarSetList as unknown as Rec[],
   name: (d, rec) => nameAt(d.bazaarSetNames, rec.id as number),
 });
 
 export const bazaarRecipeTab = makeModelTab({
-  id: 'bazaarRecipes', label: 'Bazaar Recipes', allowAdd: true, allowRemove: true,
+  id: 'bazaarRecipes', label: () => t('tab.bazaarRecipes'), allowAdd: true, allowRemove: true,
   list: (d) => d.bazaarRecipeList as unknown as Rec[],
   name: (d, rec) => nameAt(d.itemNames, rec.item as number),
 });
 
 export const auctionTab = makeModelTab({
-  id: 'auctions', label: 'Auctions', allowAdd: true, allowRemove: true,
+  id: 'auctions', label: () => t('tab.auctions'), allowAdd: true, allowRemove: true,
   list: (d) => getAuctionInfoList(d) as unknown as Rec[],
 });
 
 export const auctionPrizeTab = makeModelTab({
-  id: 'auctionPrizes', label: 'Auction Prizes', allowAdd: true, allowRemove: true,
+  id: 'auctionPrizes', label: () => t('tab.auctionPrizes'), allowAdd: true, allowRemove: true,
   list: (d) => d.auctionPrizeTableList as unknown as Rec[],
 });
 
 export const auctionGrandPrizeTab = makeModelTab({
-  id: 'auctionGrandPrizes', label: 'Auction Grand Prizes', allowAdd: true, allowRemove: true,
+  id: 'auctionGrandPrizes', label: () => t('tab.auctionGrandPrizes'), allowAdd: true, allowRemove: true,
   list: (d) => d.auctionGrandPrizeTableList as unknown as Rec[],
 });
 
 export const mapTab = makeModelTab({
-  id: 'maps', label: 'Maps (read-only)',
+  id: 'maps', label: () => t('tab.maps'),
   list: (d) => d.maps as unknown as Rec[],
 });
 
 export const unitSpriteTab = makeModelTab({
-  id: 'unitSprites', label: 'Unit Sprites (read-only)',
+  id: 'unitSprites', label: () => t('tab.unitSprites'),
   list: (d) => d.unitSstList as unknown as Rec[],
 });
 
 export const topSpriteTab = makeModelTab({
-  id: 'topSprites', label: 'Top Sprites (read-only)',
+  id: 'topSprites', label: () => t('tab.topSprites'),
   list: (d) => d.topSprites as unknown as Rec[],
 });
 
 export const faceTab = makeModelTab({
-  id: 'faces', label: 'Faces (read-only)',
+  id: 'faces', label: () => t('tab.faces'),
   list: (d) => d.unitFaces as unknown as Rec[],
 });
