@@ -174,6 +174,22 @@ describe.skipIf(!romPath)('Chinese ROM text round-trip with an empty word table'
     expect(data.noticeList.map((s) => s.text)).toEqual(before.notices);
   });
 
+
+  it('loads the built-in FFTA-DECOMP V4.1 table and decodes real names', () => {
+    const text = readFileSync(join(fixturesDir, '../../public/wordtables/ffta-decomp-v4.1.tsv'), 'utf-8');
+    const table = parseWordTable(text, 'ffta-decomp-v4.1.tsv');
+    expect(table.name).toBe('FFTA-DECOMP 汉化 V4.1');
+    expect(table.decodeMap.size).toBeGreaterThan(2900);
+    expect(table.decode(0xabd8)).toBe('士');
+    expect(table.decode(0xaa3b)).toBe('兵');
+
+    const data = loadRom(rom);
+    data.wordTable = table;
+    loadMessages(data);
+    expect(data.jobNames[1].string).toBe('士兵');
+    expect(data.jobNames[2].string).toBe('盗贼');
+  });
+
   it('displays Chinese names once a word table is supplied', () => {
     const data = loadRom(rom);
     // The first job name in this ROM is <unknown:ABD8><unknown:AA3B>.

@@ -23,9 +23,8 @@ the same file. In other browsers, saving downloads the patched ROM.
 
 - Official FFTA2 ROM: open the `.nds` directly.
 - Chinese FFTA2 ROM: open the `.nds`; the editor detects double-byte text and
-  automatically fetches the FFTA2-US-CHS V4.1 `glyphs.json` from the official
-  GitHub repository, caching it in `localStorage`. If that fetch is unavailable
-  (offline/firewalled), click **Word Table…** and load a local `glyphs.json`.
+  uses the bundled FFTA-DECOMP V4.1 word table automatically.
+- Word-table selector: Auto / US default / FFTA-DECOMP V4.1 / Local file…
 - GitHub Pages: <https://hitsmaxft.github.io/ffta2-editor/> after the workflow
   runs.
 
@@ -63,30 +62,24 @@ npm run dev -- --open '/?rom=/data/extracted/your-rom.nds'
 ## Chinese / double-byte word table
 
 Localized ROMs (including the bundled Chinese test ROM) use the otherwise
-unused `0xA9..0xBF` bytes as double-byte lead bytes. The code-to-glyph mapping is
-patch-specific, so it is supplied as an external word table.
+unused `0xA9..0xBF` bytes as double-byte lead bytes.
 
-### FFTA2-US-CHS V4.1 official charset
+The toolbar exposes a word-table selector:
 
-The `Word Table…` loader also reads the public **FFTA2-US-CHS V4.1** files
-directly:
+- **Auto** — detect Chinese double-byte text and use the built-in
+  FFTA-DECOMP V4.1 table.
+- **US default** — use the original single-byte charset, no external table.
+- **FFTA-DECOMP V4.1** — force the built-in FFTA-DECOMP V4.1 table.
+- **Local file…** — load a custom `glyphs.json`, `decode.tbl`, `glyphs.csv`,
+  or TSV word table.
 
-- `charset/v4.1/glyphs.json` (recommended)
-- `charset/v4.1/decode.tbl`
-- `charset/v4.1/glyphs.csv`
+The built-in file is `web/public/wordtables/ffta-decomp-v4.1.tsv`, derived from
+the public **FFTA-DECOMP / FFTA2-US-CHS V4.1** charset published under GNU GPL
+v3. See `web/public/wordtables/README.md` and `GPL-3.0.txt` for attribution and
+license. Only the code-to-text mapping is included — no ROM, font, translation
+or other game assets.
 
-Download them from
-<https://github.com/ffta-decomp/FFTA-US-CHS/tree/main/charset/v4.1> and load
-`glyphs.json`; no conversion is needed. The web app also tries this file
-automatically on Chinese-ROM detection (override the URL with
-`VITE_DEFAULT_WORDTABLE_URL`). For the Chinese test ROM this displays
-names such as `士兵`, `盗贼`, `白魔道士`.
-
-Those word-table files are published by **FFTA-DECOMP / FFTA2-US-CHS, V4.1字表**
-under GNU GPL v3. They are not bundled in this repository; the loader only
-consumes them at runtime.
-
-You can also supply a custom JSON/TSV file:
+Custom JSON format:
 
 ```json
 {

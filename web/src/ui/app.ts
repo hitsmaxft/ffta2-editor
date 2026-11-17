@@ -31,23 +31,40 @@ const TABS: EditorTab[] = [
   mapTab, unitSpriteTab, topSpriteTab, faceTab,
 ];
 
+type WordTableChoice = 'auto' | 'us' | 'ffta-decomp' | 'custom';
+
 interface AppState {
   data: RomData | null;
   opened: OpenedRom | null;
   dirty: boolean;
   activeTab: string;
   wordTable: WordTable | null;
+  wordTableChoice: WordTableChoice;
 }
 
-const state: AppState = { data: null, opened: null, dirty: false, activeTab: TABS[0].id, wordTable: null };
-
-// The official FFTA2-US-CHS V4.1 table is GPLv3 and is therefore fetched at
-// runtime instead of being bundled into this MIT repository. The raw GitHub
-// endpoint sends Access-Control-Allow-Origin: * so this works from Pages.
-const DEFAULT_WORDTABLE_URL =
-  import.meta.env.VITE_DEFAULT_WORDTABLE_URL ??
+const WORDTABLE_CHOICE_KEY = 'ffta2.wordtable-choice';
+const BUILTIN_WORDTABLE_PATH = 'wordtables/ffta-decomp-v4.1.tsv';
+const REMOTE_WORDTABLE_URL =
   'https://raw.githubusercontent.com/ffta-decomp/FFTA-US-CHS/main/charset/v4.1/glyphs.json';
-const WORDTABLE_CACHE_KEY = 'ffta2.default-wordtable.v4.1';
+
+function savedWordTableChoice(): WordTableChoice {
+  try {
+    const value = localStorage.getItem(WORDTABLE_CHOICE_KEY);
+    if (value === 'us' || value === 'ffta-decomp' || value === 'auto') return value;
+  } catch {
+    // ignore storage restrictions
+  }
+  return 'auto';
+}
+
+const state: AppState = {
+  data: null,
+  opened: null,
+  dirty: false,
+  activeTab: TABS[0].id,
+  wordTable: null,
+  wordTableChoice: savedWordTableChoice(),
+};
 
 function hasDoubleByteText(data: RomData): boolean {
   return data.messageList.some((table) =>
@@ -55,32 +72,17 @@ function hasDoubleByteText(data: RomData): boolean {
   );
 }
 
-function readCachedWordTable(): WordTable | null {
+async function loadBuiltinWordTable(): Promise<WordTable> {
+  const localUrl = new URL(BUILTIN_WORDTABLE_PATH, document.baseURI).href;
   try {
-    const cached = localStorage.getItem(WORDTABLE_CACHE_KEY);
-    return cached ? parseWordTable(cached, 'glyphs.json') : null;
-  } catch {
-    return null;
-  }
-}
-
-async function loadDefaultWordTable(): Promise<WordTable | null> {
-  const cached = readCachedWordTable();
-  if (cached) return cached;
-  try {
-    const res = await fetch(DEFAULT_WORDTABLE_URL, { cache: 'force-cache' });
+    const res = await fetch(localUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    const table = parseWordTable(text, 'glyphs.json');
-    try {
-      localStorage.setItem(WORDTABLE_CACHE_KEY, text);
-    } catch {
-      // Quota/privacy mode: keep the in-memory table only.
-    }
-    return table;
-  } catch (err) {
-    console.warn('Default word table unavailable:', err);
-    return null;
+    return parseWordTable(await res.text(), 'ffta-decomp-v4.1.tsv');
+  } catch (localError) {
+    console.warn('Built-in word table unavailable, trying upstream:', localError);
+    const res = await fetch(REMOTE_WORDTABLE_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return parseWordTable(await res.text(), 'glyphs.json');
   }
 }
 
@@ -105,6 +107,20 @@ function refreshButtons(): void {
   $('word-table-name').textContent = state.wordTable
     ? t('file.wordTable', { name: state.wordTable.name })
     : t('file.noWordTable');
+  syncWordTableSelect();
+}
+
+function syncWordTableSelect(): void {
+  const select = document.getElementById('word-table-select') as HTMLSelectElement | null;
+  if (select) select.value = state.wordTableChoice;
+}
+
+function persistWordTableChoice(): void {
+  try {
+    if (state.wordTableChoice !== 'custom') localStorage.setItem(WORDTABLE_CHOICE_KEY, state.wordTableChoice);
+  } catch {
+    // ignore storage restrictions
+  }
 }
 
 function renderTabs(): void {
@@ -145,22 +161,39 @@ function renderContent(): void {
 
 async function applyOpened(opened: OpenedRom): Promise<void> {
   setStatus(t('status.loading', { name: opened.name }));
+
+  let table = state.wordTableChoice === 'custom' ? state.wordTable : null;
+  if (state.wordTableChoice === 'ffta-decomp') {
+    if (!table) {
+      try {
+        table = await loadBuiltinWordTable();
+        state.wordTable = table;
+      } catch (err) {
+        setStatus(t('status.failedWordTable', { message: (err as Error).message }));
+        table = null;
+      }
+    }
+  }
+
   const data = loadRom(opened.bytes);
-  data.wordTable = state.wordTable;
+  data.wordTable = table;
   loadAll(data);
   state.data = data;
   state.opened = opened;
   state.dirty = false;
   state.activeTab = TABS.find((t) => t.available(data))?.id ?? TABS[0].id;
+
   let autoLoadedTable = false;
-  if (!data.wordTable && hasDoubleByteText(data)) {
+  if (state.wordTableChoice === 'auto' && !data.wordTable && hasDoubleByteText(data)) {
     setStatus(t('status.detectingChinese'));
-    const table = await loadDefaultWordTable();
-    if (table) {
+    try {
+      table = await loadBuiltinWordTable();
       state.wordTable = table;
       data.wordTable = table;
       loadMessages(data);
       autoLoadedTable = true;
+    } catch (err) {
+      console.warn('Built-in word table unavailable:', err);
     }
   }
 
@@ -169,6 +202,10 @@ async function applyOpened(opened: OpenedRom): Promise<void> {
   renderContent();
   if (autoLoadedTable) {
     setStatus(t('status.loadedDefaultTable', { name: opened.name }));
+  } else if (state.wordTableChoice === 'us') {
+    setStatus(t('status.usTable'));
+  } else if (state.wordTableChoice === 'ffta-decomp' && data.wordTable) {
+    setStatus(t('status.builtinTable'));
   } else if (!data.wordTable && hasDoubleByteText(data)) {
     setStatus(t('status.chineseNeedTable', { name: opened.name }));
   } else {
@@ -176,9 +213,81 @@ async function applyOpened(opened: OpenedRom): Promise<void> {
   }
 }
 
+async function setWordTableChoice(choice: WordTableChoice): Promise<void> {
+  const previous = state.wordTableChoice;
+  if (choice === 'custom') {
+    if (state.data && state.dirty && !confirm(t('status.wordTableConfirm'))) {
+      syncWordTableSelect();
+      return;
+    }
+    state.wordTableChoice = 'custom';
+    ($('word-table-input') as HTMLInputElement).click();
+    return;
+  }
+
+  state.wordTableChoice = choice;
+  persistWordTableChoice();
+
+  if (choice === 'us') {
+    state.wordTable = null;
+    if (state.data) {
+      state.data.wordTable = null;
+      loadMessages(state.data);
+      renderContent();
+    }
+    refreshButtons();
+    setStatus(t('status.usTable'));
+    return;
+  }
+
+  if (choice === 'auto') {
+    state.wordTable = null;
+    if (state.data) {
+      state.data.wordTable = null;
+      loadMessages(state.data);
+      if (hasDoubleByteText(state.data)) {
+        try {
+          const table = await loadBuiltinWordTable();
+          state.wordTable = table;
+          state.data.wordTable = table;
+          loadMessages(state.data);
+          renderContent();
+          refreshButtons();
+          setStatus(t('status.builtinTable'));
+          return;
+        } catch (err) {
+          console.warn('Built-in word table unavailable:', err);
+        }
+      }
+      renderContent();
+    }
+    refreshButtons();
+    setStatus(t('status.ready'));
+    return;
+  }
+
+  // Explicit built-in FFTA-DECOMP table.
+  try {
+    const table = await loadBuiltinWordTable();
+    state.wordTable = table;
+    if (state.data) {
+      state.data.wordTable = table;
+      loadMessages(state.data);
+      renderContent();
+    }
+    refreshButtons();
+    setStatus(state.data ? t('status.builtinTable') : t('status.ready'));
+  } catch (err) {
+    state.wordTableChoice = previous;
+    syncWordTableSelect();
+    setStatus(t('status.failedWordTable', { message: (err as Error).message }));
+  }
+}
+
 async function loadWordTableFile(file: File): Promise<void> {
   const table = parseWordTable(await file.text(), file.name);
   state.wordTable = table;
+  state.wordTableChoice = 'custom';
   if (state.data) {
     state.data.wordTable = table;
     loadMessages(state.data);
@@ -189,13 +298,6 @@ async function loadWordTableFile(file: File): Promise<void> {
     name: table.name,
     count: table.decodeMap.size + table.singleDecodeMap.size,
   }));
-}
-
-function openWordTable(): void {
-  if (state.data && state.dirty && !confirm(t('status.wordTableConfirm'))) {
-    return;
-  }
-  ($('word-table-input') as HTMLInputElement).click();
 }
 
 async function openRom(): Promise<void> {
@@ -244,7 +346,9 @@ async function save(asNew: boolean): Promise<void> {
 
 export function boot(): void {
   $('open-btn').onclick = () => void openRom();
-  $('word-table-btn').onclick = openWordTable;
+  const wordTableSelect = $('word-table-select') as HTMLSelectElement;
+  wordTableSelect.value = state.wordTableChoice;
+  wordTableSelect.onchange = () => void setWordTableChoice(wordTableSelect.value as WordTableChoice);
   const wordTableInput = $('word-table-input') as HTMLInputElement;
   wordTableInput.onchange = async () => {
     const file = wordTableInput.files?.[0];
