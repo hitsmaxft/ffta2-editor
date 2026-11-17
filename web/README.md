@@ -22,9 +22,10 @@ the File System Access API is used to write only the changed byte spans back to
 the same file. In other browsers, saving downloads the patched ROM.
 
 - Official FFTA2 ROM: open the `.nds` directly.
-- Chinese FFTA2 ROM: open the `.nds`, then click **Word Table…** and load the
-  FFTA2-US-CHS V4.1 `glyphs.json` (see below). The editor detects double-byte
-  text and shows a hint when a word table is needed.
+- Chinese FFTA2 ROM: open the `.nds`; the editor detects double-byte text and
+  automatically fetches the FFTA2-US-CHS V4.1 `glyphs.json` from the official
+  GitHub repository, caching it in `localStorage`. If that fetch is unavailable
+  (offline/firewalled), click **Word Table…** and load a local `glyphs.json`.
 - GitHub Pages: <https://hitsmaxft.github.io/ffta2-editor/> after the workflow
   runs.
 
@@ -72,7 +73,9 @@ directly:
 
 Download them from
 <https://github.com/ffta-decomp/FFTA-US-CHS/tree/main/charset/v4.1> and load
-`glyphs.json`; no conversion is needed. For the Chinese test ROM this displays
+`glyphs.json`; no conversion is needed. The web app also tries this file
+automatically on Chinese-ROM detection (override the URL with
+`VITE_DEFAULT_WORDTABLE_URL`). For the Chinese test ROM this displays
 names such as `士兵`, `盗贼`, `白魔道士`.
 
 Those word-table files are published by **FFTA-DECOMP / FFTA2-US-CHS, V4.1字表**

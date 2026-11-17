@@ -40,6 +40,49 @@ interface AppState {
 
 const state: AppState = { data: null, opened: null, dirty: false, activeTab: TABS[0].id, wordTable: null };
 
+// The official FFTA2-US-CHS V4.1 table is GPLv3 and is therefore fetched at
+// runtime instead of being bundled into this MIT repository. The raw GitHub
+// endpoint sends Access-Control-Allow-Origin: * so this works from Pages.
+const DEFAULT_WORDTABLE_URL =
+  import.meta.env.VITE_DEFAULT_WORDTABLE_URL ??
+  'https://raw.githubusercontent.com/ffta-decomp/FFTA-US-CHS/main/charset/v4.1/glyphs.json';
+const WORDTABLE_CACHE_KEY = 'ffta2.default-wordtable.v4.1';
+
+function hasDoubleByteText(data: RomData): boolean {
+  return data.messageList.some((table) =>
+    table.strings.some((entry) => /<unknown:[0-9A-Fa-f]{4}>/.test(entry.string))
+  );
+}
+
+function readCachedWordTable(): WordTable | null {
+  try {
+    const cached = localStorage.getItem(WORDTABLE_CACHE_KEY);
+    return cached ? parseWordTable(cached, 'glyphs.json') : null;
+  } catch {
+    return null;
+  }
+}
+
+async function loadDefaultWordTable(): Promise<WordTable | null> {
+  const cached = readCachedWordTable();
+  if (cached) return cached;
+  try {
+    const res = await fetch(DEFAULT_WORDTABLE_URL, { cache: 'force-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const table = parseWordTable(text, 'glyphs.json');
+    try {
+      localStorage.setItem(WORDTABLE_CACHE_KEY, text);
+    } catch {
+      // Quota/privacy mode: keep the in-memory table only.
+    }
+    return table;
+  } catch (err) {
+    console.warn('Default word table unavailable:', err);
+    return null;
+  }
+}
+
 const $ = (id: string) => document.getElementById(id)!;
 
 function setStatus(msg: string): void {
@@ -108,17 +151,30 @@ async function applyOpened(opened: OpenedRom): Promise<void> {
   state.opened = opened;
   state.dirty = false;
   state.activeTab = TABS.find((t) => t.available(data))?.id ?? TABS[0].id;
+  let autoLoadedTable = false;
+  if (!data.wordTable && hasDoubleByteText(data)) {
+    setStatus('Chinese double-byte text detected — loading FFTA2-US-CHS V4.1 default word table…');
+    const table = await loadDefaultWordTable();
+    if (table) {
+      state.wordTable = table;
+      data.wordTable = table;
+      loadMessages(data);
+      autoLoadedTable = true;
+    }
+  }
+
   refreshButtons();
   renderTabs();
   renderContent();
-  const hasDoubleByte = data.messageList.some((t) =>
-    t.strings.some((s) => /<unknown:[0-9A-Fa-f]{4}>/.test(s.string))
-  );
-  setStatus(
-    hasDoubleByte && !data.wordTable
-      ? `Loaded ${opened.name} — Chinese double-byte text detected. Click "Word Table…" and load FFTA2-US-CHS V4.1 glyphs.json.`
-      : `Loaded ${opened.name} — ${data.archive?.files.length ?? 0} archive entries.`
-  );
+  if (autoLoadedTable) {
+    setStatus(`Loaded ${opened.name} — Chinese text decoded with the default FFTA2-US-CHS V4.1 word table.`);
+  } else if (!data.wordTable && hasDoubleByteText(data)) {
+    setStatus(
+      `Loaded ${opened.name} — Chinese double-byte text detected. Default word table could not be fetched; use "Word Table…" to load glyphs.json manually.`
+    );
+  } else {
+    setStatus(`Loaded ${opened.name} — ${data.archive?.files.length ?? 0} archive entries.`);
+  }
 }
 
 async function loadWordTableFile(file: File): Promise<void> {
