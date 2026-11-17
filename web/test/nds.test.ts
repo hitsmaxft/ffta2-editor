@@ -30,21 +30,12 @@ describe('NDS ROM filesystem', () => {
     assertBytesEqual(rom.readArm9().toUint8Array(), fixture('nds/arm9.bin'), 'arm9');
   });
 
-  it('decompresses overlays', () => {
+  it('reads overlays as raw files like ndstool', () => {
     const rom = loadRom();
     for (const [id, name] of Object.entries(manifest.overlays)) {
       const content = rom.readOverlay(Number(id));
       assertBytesEqual(content.toUint8Array(), fixture(`nds/${name}.bin`), `overlay ${id}`);
     }
-  });
-
-  it('reads the +0x1c compressed-overlay marker and decompresses to RAM size', () => {
-    const rom = loadRom();
-    const ovl = rom.overlays.find((o) => o.id === 11)!;
-    const raw = rom.files[ovl.fileId];
-    expect(ovl.compressed).toBe(true);
-    expect(raw.end - raw.start).toBe(1116); // compressed payload in the fixture
-    expect(rom.readOverlay(11).remaining()).toBe(6000); // decompressed payload
   });
 
   it('in-place patch keeps untouched bytes and updates changed files', () => {

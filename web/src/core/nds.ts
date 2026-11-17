@@ -3,7 +3,6 @@
 // so saves only write changed regions of the local ROM file.
 
 import { Bytes } from './binary';
-import * as LZSS from './lzss';
 
 export interface NdsFile {
   id: number;
@@ -15,7 +14,6 @@ export interface NdsFile {
 export interface OverlayInfo {
   id: number;
   fileId: number;
-  compressed: boolean;
   ramAddress: number;
   ramSize: number;
 }
@@ -96,21 +94,13 @@ export class NdsRom {
     const ovlSize = v.getUint32(0x54, true);
     for (let i = 0; i < ovlSize / 32; i++) {
       const base = ovlOffset + i * 32;
+      // The Java implementation delegates extraction to ndstool, which treats
+      // overlay files as opaque raw bytes. Keep the File ID at +0x18 and do not
+      // interpret, decompress or rewrite the reserved +0x1c word.
       const fileIdWord = v.getUint32(base + 0x18, true);
-      const reservedWord = v.getUint32(base + 0x1c, true);
-      // Hardware/tooling variants disagree on where the compressed-overlay
-      // marker lives: the classic NDS layout puts bit 24 in the File ID word
-      // (+0x18), while some toolchains/fixtures use the +0x1c word (either
-      // bit 24 or a plain boolean). Accept all of them without treating an
-      // unrelated reserved value as compressed.
-      const compressed =
-        (fileIdWord & 0x01000000) !== 0 ||
-        (reservedWord & 0x01000000) !== 0 ||
-        reservedWord === 1;
       this.overlays.push({
         id: v.getUint32(base, true),
         fileId: fileIdWord & 0xffffff,
-        compressed,
         ramAddress: v.getUint32(base + 4, true),
         ramSize: v.getUint32(base + 8, true),
       });
@@ -169,16 +159,15 @@ export class NdsRom {
     const ovl = this.overlays.find((o) => o.id === id);
     if (!ovl) throw new Error(`Overlay ${id} not found`);
     const f = this.files[ovl.fileId];
-    const raw = this.data.slice(f.start, f.end - f.start);
-    if (ovl.compressed) return LZSS.decode(raw).decodedData;
-    return raw;
+    // ndstool (used by the Java editor) extracts overlay files verbatim. Do not
+    // decompress here: the Java save path writes these exact bytes back.
+    return this.data.slice(f.start, f.end - f.start);
   }
 
   // Compute a minimal patch plan. Files that still fit their original span are
   // overwritten in place; grown files are appended at the end of the ROM and
-  // their FAT entries updated. Only changed regions are written.
-  // Overlay content is always decompressed; its overlay-table compression flag
-  // is cleared so the game loads it directly.
+  // their FAT entries updated. Only changed regions are written. Overlay files
+  // are replaced as raw bytes, matching MainController.save + ndstool.
   buildPatchPlan(
     changes: Map<string, Uint8Array>,
     overlayChanges: Map<number, Uint8Array> = new Map(),
@@ -206,22 +195,10 @@ export class NdsRom {
       if (!f) throw new Error(`NDS file not found: ${path}`);
       fileChanges.set(f.id, content);
     }
-    const ovlTableWrites: PatchWrite[] = [];
     for (const [overlayId, content] of overlayChanges) {
       const ovl = this.overlays.find((o) => o.id === overlayId);
       if (!ovl) throw new Error(`Overlay ${overlayId} not found`);
       fileChanges.set(ovl.fileId, content);
-      if (ovl.compressed) {
-        // Store the decompressed replacement: clear both possible compression
-        // marker locations (+0x18 bit 24 and the +0x1c word).
-        const entry = new Uint8Array(8);
-        const ev = new DataView(entry.buffer);
-        ev.setUint32(0, ovl.fileId, true);
-        ev.setUint32(4, 0, true);
-        const ovlOffset = this.data.view.getUint32(0x50, true);
-        const idx = this.overlays.indexOf(ovl);
-        ovlTableWrites.push({ position: ovlOffset + idx * 32 + 24, data: entry });
-      }
     }
     for (const [id, content] of [...fileChanges.entries()].sort((a, b) => a[0] - b[0])) {
       const f = this.files[id];
@@ -243,7 +220,6 @@ export class NdsRom {
       }
     }
 
-    writes.push(...ovlTableWrites);
     if (fatUpdates.size > 0) {
       const fat = new Uint8Array(this.fatSize);
       fat.set(new Uint8Array(this.data.buf, this.data.base + this.fatOffset, this.fatSize));
