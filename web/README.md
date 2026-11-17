@@ -46,9 +46,11 @@ npm run dev -- --open '/?rom=/data/extracted/your-rom.nds'
   formations, quests, bazaar, auctions, sprites/faces/top-sprites/maps.
 - The save order and serialization logic are ported line-for-line from the Java
   models/controllers. UI-only JavaFX properties/cell renderers are omitted.
-- Deep schema-free form UI: primitive fields, nested records, arrays, bit flags
-  and hex byte arrays are all editable. Read-only domains (sprites/maps) are
-  still inspectable.
+- Relationship-aware form UI: numeric foreign keys display as `#id name` and use
+  autocomplete datalists (items, abilities, jobs, formations, etc.); enums are
+  dropdowns; record fields are grouped into sections. Nested records, arrays,
+  bit flags and hex byte arrays remain editable. Read-only domains
+  (sprites/maps) are still inspectable.
 - UI language switch: English / 简体中文, persisted in localStorage and auto-detected
   from the browser locale.
 - Save uses a minimal in-place patch plan. Changed files that fit their original

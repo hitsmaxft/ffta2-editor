@@ -12,6 +12,8 @@ import { el, clear, recordList, searchBox, numberInput, textInput, textArea } fr
 import { Flags } from '../data/model/flags';
 import { getAuctionInfoList, getLawBonusStoryRequirements, setLawBonusStoryRequirements } from '../data/controllers/item';
 import { t } from './i18n';
+import { fieldMeta, groupFor, refOptions } from './schema';
+import { enumInput, referenceInput } from './referenceSelect';
 
 type Rec = Record<string, unknown>;
 
@@ -74,17 +76,17 @@ function hasNamedBooleanFlags(obj: Rec): boolean {
   return Object.entries(obj).some(([k, v]) => k !== 'flags' && typeof v === 'boolean');
 }
 
-function primitiveRow(key: string, value: unknown, onChange: (v: unknown) => void): [HTMLElement, HTMLElement] {
+function primitiveRow(label: string, value: unknown, onChange: (v: unknown) => void): [HTMLElement, HTMLElement] {
   if (typeof value === 'boolean') {
     const cb = el('input', { type: 'checkbox' });
     cb.checked = value;
     cb.onchange = () => onChange(cb.checked);
-    return [el('label', { text: humanField(key) }), cb];
+    return [el('label', { text: label }), cb];
   }
   if (typeof value === 'number') {
-    return [el('label', { text: humanField(key) }), numberInput(value, (v) => onChange(v))];
+    return [el('label', { text: label }), numberInput(value, (v) => onChange(v))];
   }
-  return [el('label', { text: humanField(key) }), textInput(String(value), (v) => onChange(v))];
+  return [el('label', { text: label }), textInput(String(value), (v) => onChange(v))];
 }
 
 function renderFlags(flags: Flags, markDirty: () => void): HTMLElement {
@@ -141,17 +143,29 @@ function renderValue(
   owner: Rec,
   key: string,
   value: unknown,
+  data: RomData,
+  tabId: string,
   markDirty: () => void,
   depth: number
 ): void {
+  const meta = fieldMeta(tabId, key);
+  const label = meta?.label ?? humanField(key);
   if (typeof value !== 'object' || value === null) {
-    const [lab, ctrl] = primitiveRow(key, value, (v) => { owner[key] = v; markDirty(); });
-    container.append(lab, ctrl);
+    let ctrl: HTMLElement;
+    if (typeof value === 'number' && meta?.ref) {
+      ctrl = referenceInput(value, refOptions(data, meta.ref), (v) => { owner[key] = v; markDirty(); });
+    } else if (typeof value === 'number' && meta?.enum) {
+      ctrl = enumInput(value, meta.enum, (v) => { owner[key] = v; markDirty(); });
+    } else {
+      const [, fallback] = primitiveRow(label, value, (v) => { owner[key] = v; markDirty(); });
+      ctrl = fallback;
+    }
+    container.append(el('label', { text: label }), ctrl);
     return;
   }
 
   if (value instanceof Flags) {
-    container.append(el('label', { text: humanField(key) }));
+    container.append(el('label', { text: label }));
     const wrap = el('div', { class: 'full' });
     wrap.append(renderFlags(value, markDirty));
     container.append(wrap);
@@ -159,14 +173,14 @@ function renderValue(
   }
 
   if (value instanceof Uint8Array) {
-    container.append(el('label', { text: humanField(key) }));
+    container.append(el('label', { text: label }));
     const wrap = el('div', { class: 'full' });
     wrap.append(renderBytes(value, (v) => { owner[key] = v; markDirty(); }, markDirty));
     container.append(wrap);
     return;
   }
 
-  const nestedHeading = depth === 0 ? el('h3', { class: 'field-group-title', text: humanField(key) }) : undefined;
+  const nestedHeading = depth === 0 ? el('h3', { class: 'field-group-title', text: label }) : undefined;
   if (nestedHeading) container.append(nestedHeading);
 
   if (Array.isArray(value)) {
@@ -182,11 +196,17 @@ function renderValue(
         for (const [k, v] of Object.entries(item as Rec)) {
           if (k === 'id' || typeof v === 'function' || (k === 'name' && typeof v === 'string')) continue;
           if (k === 'flags' && v instanceof Flags && hasNamedBooleanFlags(item as Rec)) continue;
-          renderValue(form, item as Rec, k, v, markDirty, depth + 1);
+          renderValue(form, item as Rec, k, v, data, tabId, markDirty, depth + 1);
         }
         card.append(form);
       } else if (typeof item === 'number') {
-        card.append(numberInput(item, (v) => { items[index] = v; markDirty(); }));
+        if (meta?.ref) {
+          card.append(referenceInput(item, refOptions(data, meta.ref), (v) => { items[index] = v; markDirty(); }));
+        } else if (meta?.enum) {
+          card.append(enumInput(item, meta.enum, (v) => { items[index] = v; markDirty(); }));
+        } else {
+          card.append(numberInput(item, (v) => { items[index] = v; markDirty(); }));
+        }
       } else if (typeof item === 'string') {
         card.append(textInput(item, (v) => { items[index] = v; markDirty(); }));
       } else if (item instanceof Uint8Array) {
@@ -206,7 +226,7 @@ function renderValue(
       const parent = arrayBox.parentElement;
       if (parent) {
         const replacement = el('div', { class: depth === 0 ? 'field-group full' : 'field-group nested' });
-        renderValue(replacement, owner, key, items, markDirty, depth);
+        renderValue(replacement, owner, key, items, data, tabId, markDirty, depth);
         parent.replaceChild(replacement, arrayBox);
       }
     };
@@ -218,7 +238,7 @@ function renderValue(
       const parent = arrayBox.parentElement;
       if (parent) {
         const replacement = el('div', { class: depth === 0 ? 'field-group full' : 'field-group nested' });
-        renderValue(replacement, owner, key, items, markDirty, depth);
+        renderValue(replacement, owner, key, items, data, tabId, markDirty, depth);
         parent.replaceChild(replacement, arrayBox);
       }
     };
@@ -233,7 +253,7 @@ function renderValue(
   for (const [k, v] of Object.entries(value as Rec)) {
     if (k === 'id' || typeof v === 'function' || (k === 'name' && typeof v === 'string')) continue;
     if (k === 'flags' && v instanceof Flags && hasNamedBooleanFlags(value as Rec)) continue;
-    renderValue(form, value as Rec, k, v, markDirty, depth + 1);
+    renderValue(form, value as Rec, k, v, data, tabId, markDirty, depth + 1);
   }
   container.append(form);
 }
@@ -273,12 +293,24 @@ function renderRecord(detail: HTMLElement, data: RomData, opts: ModelTabOpts, re
   header.append(actions);
   detail.append(header);
 
-  const form = el('div', { class: 'form' });
+  const groups = new Map<string, Array<[string, unknown]>>();
   for (const [key, value] of Object.entries(rec)) {
     if (key === 'id' || typeof value === 'function' || (key === 'name' && typeof value === 'string')) continue;
-    renderValue(form, rec, key, value, markDirty, 0);
+    const group = groupFor(opts.id, key);
+    const list = groups.get(group) ?? [];
+    list.push([key, value]);
+    groups.set(group, list);
   }
-  detail.append(form);
+  for (const [group, entries] of groups) {
+    const section = el('section', { class: 'record-section' });
+    section.append(el('h3', { class: 'record-section-title', text: t(group as Parameters<typeof t>[0]) }));
+    const form = el('div', { class: 'form' });
+    for (const [key, value] of entries) {
+      renderValue(form, rec, key, value, data, opts.id, markDirty, 0);
+    }
+    section.append(form);
+    detail.append(section);
+  }
 
   if ('id' in rec) detail.append(el('p', { class: 'hint', text: t('model.rawId', { id: String(rec.id) }) }));
 }

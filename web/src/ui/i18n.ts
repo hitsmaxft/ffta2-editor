@@ -5,6 +5,17 @@ export type Language = 'en' | 'zh-CN';
 
 const en = {
   'lang.label': 'Language',
+  'group.other': 'Other',
+  'group.visuals': 'Visuals',
+  'group.references': 'References',
+  'group.stats': 'Stats',
+  'group.growth': 'Growth',
+  'group.resistances': 'Resistances',
+  'group.flags': 'Flags',
+  'group.questInfo': 'Quest Information',
+  'group.questData': 'Quest Data',
+  'group.formationHeader': 'Formation Header',
+  'group.formationUnits': 'Formation Units',
   'button.openRom': 'Open ROM…',
   'button.wordTable': 'Word Table…',
   'button.save': 'Save',
@@ -88,10 +99,22 @@ const en = {
   'law.requirement': 'Requirement {n}',
 } as const;
 
-type Key = keyof typeof en;
+export type TranslationKey = keyof typeof en;
+type Key = TranslationKey;
 
 const zh: Record<Key, string> = {
   'lang.label': '语言',
+  'group.other': '其他',
+  'group.visuals': '外观',
+  'group.references': '关联数据',
+  'group.stats': '属性',
+  'group.growth': '成长',
+  'group.resistances': '抗性',
+  'group.flags': '标志位',
+  'group.questInfo': '任务信息',
+  'group.questData': '任务数据',
+  'group.formationHeader': '编成信息',
+  'group.formationUnits': '编成单位',
   'button.openRom': '打开 ROM…',
   'button.wordTable': '词表…',
   'button.save': '保存',

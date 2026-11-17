@@ -47,11 +47,16 @@ describe.skipIf(!romPath)('web UI smoke test on a real ROM', () => {
     const container = document.createElement('div');
     jobTab.render(container, data, () => {});
 
-    const numberInput = container.querySelector<HTMLInputElement>('input[type="number"]');
-    expect(numberInput).not.toBeNull();
+    expect(container.querySelector('select.enum-input')).not.toBeNull();
+    expect(container.querySelector('input[list]')).not.toBeNull();
+    expect(container.querySelector('datalist option')?.getAttribute('value')).toContain('#');
+
+    const moveLabel = [...container.querySelectorAll('label')].find((l) => l.textContent === 'Move');
+    const numberInput = moveLabel?.nextElementSibling as HTMLInputElement | null;
+    expect(numberInput?.type).toBe('number');
     numberInput!.value = '77';
     numberInput!.dispatchEvent(new Event('change'));
-    expect(data.jobDataList[0].unitPortrait).toBe(77);
+    expect(data.jobDataList[0].move).toBe(77);
 
     const add = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Add record');
     expect(add).toBeDefined();
