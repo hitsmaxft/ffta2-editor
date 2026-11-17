@@ -246,16 +246,19 @@ const abilityIdFixture = join(fixturesDir, 'ability/abilityId.json');
 // This fixture contains game-derived ability names and is intentionally not
 // distributed in git. Without it, only these parity checks are skipped.
 describe.skipIf(!existsSync(abilityIdFixture))('AbilityId data tables', () => {
-  const data = fixtureJson<{ vanillaAbilityHelp: number[]; abilityNames: string[] }>('ability/abilityId.json');
+  // Read lazily: describe.skipIf still executes the suite callback while
+  // collecting tests, so an eager read would fail in CI where this local-only
+  // game-derived fixture is intentionally absent.
+  const data = () => fixtureJson<{ vanillaAbilityHelp: number[]; abilityNames: string[] }>('ability/abilityId.json');
 
   it('vanillaAbilityHelp matches Java exactly', () => {
     expect(AbilityId.vanillaAbilityHelp.length).toBe(822);
-    expect(AbilityId.vanillaAbilityHelp).toEqual(data.vanillaAbilityHelp);
+    expect(AbilityId.vanillaAbilityHelp).toEqual(data().vanillaAbilityHelp);
   });
 
   it('abilityNames matches Java exactly', () => {
     expect(AbilityId.abilityNames.length).toBe(891);
-    expect(AbilityId.abilityNames).toEqual(data.abilityNames);
+    expect(AbilityId.abilityNames).toEqual(data().abilityNames);
   });
 
   it('AbilityId record holds id/name and toString returns name', () => {
