@@ -2,7 +2,7 @@
 
 import { RomData } from '../data/romData';
 import { el, clear, recordList, searchBox, textArea } from './widgets';
-import { t } from './i18n';
+import { messageTableName, t } from './i18n';
 
 export interface EditorTab {
   id: string;
@@ -30,7 +30,7 @@ export const textTab: EditorTab = {
       clear(right);
       const table = data.messageList[tableIdx];
       if (!table) return;
-      right.append(el('h2', { class: 'section-title', text: table.name }));
+      right.append(el('h2', { class: 'section-title', text: messageTableName(table.id, table.name) }));
       if (table.strings.length === 0) {
         right.append(el('div', { class: 'notice', text: t('text.emptyTable') }));
         return;
@@ -69,7 +69,7 @@ export const textTab: EditorTab = {
       const { list, setSelected } = recordList({
         count: data.messageList.length,
         filter: tableFilter,
-        label: (i) => data.messageList[i].name,
+        label: (i) => messageTableName(data.messageList[i].id, data.messageList[i].name),
         onSelect: (i) => { tableIdx = i; stringIdx = 0; setSelected(i); renderRight(); },
       });
       left.append(list);

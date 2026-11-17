@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { applyTranslations, getLanguage, setLanguage, t } from '../src/ui/i18n';
+import { applyTranslations, getLanguage, messageTableName, setLanguage, t } from '../src/ui/i18n';
 
 describe('UI internationalization', () => {
   beforeEach(() => {
@@ -12,6 +12,7 @@ describe('UI internationalization', () => {
     setLanguage('zh-CN');
     expect(getLanguage()).toBe('zh-CN');
     expect(t('tab.jobs')).toBe('职业');
+    expect(messageTableName(1, 'Job names')).toBe('职业名');
     expect(t('status.loadedEntries', { name: 'rom.nds', count: 3 })).toContain('rom.nds');
   });
 
@@ -29,5 +30,7 @@ describe('UI internationalization', () => {
     expect(input.placeholder).toBe('筛选…');
     expect(titled.title).toBe('语言');
     expect(document.documentElement.lang).toBe('zh-CN');
+    setLanguage('en');
+    expect(messageTableName(1, 'Job names')).toBe('Job names');
   });
 });
