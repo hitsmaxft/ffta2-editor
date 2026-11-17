@@ -32,3 +32,13 @@ ffta2-editor/*
 .vscode/*
 logs/*
 *.nds*/*
+# TypeScript web editor
+web/node_modules/
+web/dist/
+web/test/ts-output/
+web/.browser_profile/
+node_modules/
+
+# Local-only reference fixture containing game-derived ability names.
+# Kept on developer machines for parity tests, not distributed in git.
+web/test/fixtures/ability/abilityId.json

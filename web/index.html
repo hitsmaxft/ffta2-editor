@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FFTA2 Web Editor</title>
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <h1>FFTA2 Editor</h1>
+        <div class="actions">
+          <button id="open-btn">Open ROM…</button>
+          <button id="word-table-btn">Word Table…</button>
+          <button id="save-btn" disabled>Save</button>
+          <button id="save-as-btn" disabled>Save As…</button>
+          <span id="file-name" class="file-name">No ROM loaded</span>
+          <span id="word-table-name" class="file-name">No word table</span>
+        </div>
+      </header>
+      <nav id="tabs" class="tabs"></nav>
+      <main id="content" class="content">
+        <div class="empty-state">
+          <p>Open a Final Fantasy Tactics Advance 2 ROM (.nds) to begin editing.</p>
+          <p class="hint">Saving uses minimal in-place writes when your browser supports the File System Access API.</p>
+        </div>
+      </main>
+      <footer id="status" class="status">Ready.</footer>
+    </div>
+    <input type="file" id="file-input" accept=".nds" hidden />
+    <input type="file" id="word-table-input" accept=".json,.tsv,.csv,.tbl,.txt" hidden />
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

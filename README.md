@@ -1,5 +1,35 @@
-# Setup:
-- Download the newest version here https://github.com/Rurusachi/ffta2-editor/releases/latest.
+# FFTA2 Editor
+
+This repository contains two implementations:
+
+- **`web/`** — TypeScript browser editor (open a ROM, edit data, save a patched
+  `.nds`). See [`web/README.md`](web/README.md) for commands, supported domains
+  and the byte-consistency test/oracle workflow.
+- **root `src/` + `pom.xml`** — the original JavaFX editor, kept as the
+  behavioural reference and used to generate verification fixtures/payloads.
+
+Java model serialization and the save/repack pipeline are ported 1:1 to
+TypeScript. The web UI is a DOM implementation rather than a JavaFX clone; it
+exposes every editable numeric/nested field plus text tables, and inspects the
+read-only sprite/map domains. Chinese double-byte text is supported through an
+external word table (`web/README.md`).
+
+## Quick start (web)
+
+```bash
+cd web
+npm ci
+npm run dev
+```
+
+```bash
+cd web
+npm test          # model fixtures + real-ROM + Java oracle byte comparisons
+npm run build
+```
+
+## Original Java editor setup
+- Download the newest Java release here https://github.com/Rurusachi/ffta2-editor/releases/latest.
 - Unpack the zip file to its own folder.
 - Follow the instructions to install devkitPro (the NDS Development component is required) here https://devkitpro.org/wiki/Getting_Started.
 - Find ndstool.exe in DevkitPro/tools/bin and copy it to the same folder as the FFTA2 Editor (next to ffta2-editor.exe).
