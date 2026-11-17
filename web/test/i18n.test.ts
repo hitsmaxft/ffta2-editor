@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { applyTranslations, getLanguage, messageTableName, setLanguage, t } from '../src/ui/i18n';
+import { applyTranslations, enumLabel, fieldLabel, getLanguage, messageTableName, setLanguage, t } from '../src/ui/i18n';
 
 describe('UI internationalization', () => {
   beforeEach(() => {
@@ -13,6 +13,10 @@ describe('UI internationalization', () => {
     expect(getLanguage()).toBe('zh-CN');
     expect(t('tab.jobs')).toBe('职业');
     expect(messageTableName(1, 'Job names')).toBe('职业名');
+    expect(fieldLabel('move', 'Move')).toBe('移动力');
+    expect(fieldLabel('hpBase', 'HP Base')).toBe('HP 基础');
+    expect(enumLabel('HUME', 'HUME')).toBe('人类');
+    expect(enumLabel('WEAK', 'WEAK')).toBe('弱');
     expect(t('status.loadedEntries', { name: 'rom.nds', count: 3 })).toContain('rom.nds');
   });
 
@@ -32,5 +36,7 @@ describe('UI internationalization', () => {
     expect(document.documentElement.lang).toBe('zh-CN');
     setLanguage('en');
     expect(messageTableName(1, 'Job names')).toBe('Job names');
+    expect(fieldLabel('move', 'Move')).toBe('Move');
+    expect(enumLabel('WEAK', 'WEAK')).toBe('WEAK');
   });
 });

@@ -3,6 +3,7 @@
 import { el } from './widgets';
 import type { EnumDef } from '../data/model/enums';
 import type { RefOption } from './schema';
+import { enumLabel, t } from './i18n';
 
 function labelOf(option: RefOption): string {
   return option.name ? `#${option.id} ${option.name}` : `#${option.id}`;
@@ -60,7 +61,7 @@ export function referenceInput(
     highlighted = -1;
     list.replaceChildren();
     if (visible.length === 0) {
-      list.append(el('li', { class: 'search-select-empty', text: 'No matches' }));
+      list.append(el('li', { class: 'search-select-empty', text: t('ref.noMatches') }));
     } else {
       visible.forEach((option, index) => {
         const item = el('li', { class: 'search-select-option', text: labelOf(option) });
@@ -131,14 +132,14 @@ export function enumInput(
   const select = el('select', { class: 'enum-input' });
   let known = false;
   for (const item of enumeration.values) {
-    const option = el('option', { value: String(item.value), text: `${item.name} (#${item.value})` });
+    const option = el('option', { value: String(item.value), text: `${enumLabel(item.name, item.name)} (#${item.value})` });
     if (item.value === current) known = true;
     select.append(option);
   }
   if (!known) {
     select.append(el('option', {
       value: String(current),
-      text: `0x${(current & 0xff).toString(16).toUpperCase().padStart(2, '0')} (unknown)`,
+      text: `0x${(current & 0xff).toString(16).toUpperCase().padStart(2, '0')} (${t('ref.unknown')})`,
     }));
   }
   select.value = String(current);

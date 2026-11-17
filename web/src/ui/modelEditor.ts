@@ -11,7 +11,7 @@ import { EditorTab } from './textEditor';
 import { el, clear, recordList, searchBox, numberInput, textInput, textArea } from './widgets';
 import { Flags } from '../data/model/flags';
 import { getAuctionInfoList, getLawBonusStoryRequirements, setLawBonusStoryRequirements } from '../data/controllers/item';
-import { t } from './i18n';
+import { fieldLabel, t } from './i18n';
 import { fieldMeta, groupFor, refOptions } from './schema';
 import { enumInput, referenceInput } from './referenceSelect';
 
@@ -149,7 +149,7 @@ function renderValue(
   depth: number
 ): void {
   const meta = fieldMeta(tabId, key);
-  const label = meta?.label ?? humanField(key);
+  const label = fieldLabel(key, meta?.label ?? humanField(key));
   if (typeof value !== 'object' || value === null) {
     let ctrl: HTMLElement;
     if (typeof value === 'number' && meta?.ref) {
