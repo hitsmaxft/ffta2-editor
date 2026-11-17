@@ -46,7 +46,7 @@ npm run dev -- --open '/?rom=/data/extracted/your-rom.nds'
 - The save order and serialization logic are ported line-for-line from the Java
   models/controllers. UI-only JavaFX properties/cell renderers are omitted.
 - Relationship-aware form UI: numeric foreign keys display as `#id name` and use
-  autocomplete datalists (items, abilities, jobs, formations, etc.); enums are
+  searchable dropdowns (items, abilities, jobs, formations, etc.); enums are
   dropdowns; record fields are grouped into sections. Nested records, arrays,
   bit flags and hex byte arrays remain editable. Read-only domains
   (sprites/maps) are still inspectable.

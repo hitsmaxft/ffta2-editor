@@ -48,8 +48,8 @@ describe.skipIf(!romPath)('web UI smoke test on a real ROM', () => {
     jobTab.render(container, data, () => {});
 
     expect(container.querySelector('select.enum-input')).not.toBeNull();
-    expect(container.querySelector('input[list]')).not.toBeNull();
-    expect(container.querySelector('datalist option')?.getAttribute('value')).toContain('#');
+    expect(container.querySelector('.search-select')).not.toBeNull();
+    expect(container.querySelector('.search-select input')?.getAttribute('role')).toBe('combobox');
 
     const moveLabel = [...container.querySelectorAll('label')].find((l) => l.textContent === 'Move');
     const numberInput = moveLabel?.nextElementSibling as HTMLInputElement | null;

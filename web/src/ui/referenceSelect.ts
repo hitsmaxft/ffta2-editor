@@ -1,10 +1,8 @@
-// Dropdown/autocomplete controls for enum fields and numeric game-data ids.
+// Searchable dropdown controls for numeric game-data ids and enums.
 
 import { el } from './widgets';
 import type { EnumDef } from '../data/model/enums';
 import type { RefOption } from './schema';
-
-let nextDatalistId = 0;
 
 function labelOf(option: RefOption): string {
   return option.name ? `#${option.id} ${option.name}` : `#${option.id}`;
@@ -15,45 +13,113 @@ export function referenceInput(
   options: RefOption[],
   onChange: (value: number) => void
 ): HTMLElement {
-  const listId = `ref-options-${++nextDatalistId}`;
-  const input = el('input', { type: 'text', class: 'ref-input', autocomplete: 'off' });
-  input.value = labelOf(
-    options.find((option) => option.id === current) ?? { id: current, name: '' }
-  );
+  let selected = current;
+  let highlighted = -1;
+  let visible: RefOption[] = [];
 
-  const datalist = el('datalist', { id: listId });
-  for (const option of options) {
-    const opt = el('option', { value: labelOf(option) });
-    datalist.append(opt);
-  }
-  input.setAttribute('list', listId);
+  const wrapper = el('div', { class: 'search-select' });
+  const input = el('input', {
+    type: 'text',
+    class: 'search-select-input',
+    autocomplete: 'off',
+    spellcheck: 'false',
+  });
+  input.setAttribute('role', 'combobox');
+  input.setAttribute('aria-autocomplete', 'list');
+  const toggle = el('button', { type: 'button', class: 'search-select-toggle', text: '▾', tabindex: '-1' });
+  const list = el('ul', { class: 'search-select-list' });
+  list.hidden = true;
+  list.setAttribute('role', 'listbox');
+  wrapper.append(input, toggle, list);
 
-  const commit = () => {
-    const text = input.value.trim();
-    const numeric = /^#?\s*(-?\d+)/.exec(text);
-    let id: number | undefined = numeric ? Number(numeric[1]) : undefined;
-    if (id === undefined) {
-      id = options.find((option) => option.name === text)?.id;
-    }
-    if (id === undefined || Number.isNaN(id)) {
-      input.classList.add('invalid');
-      // Restore the previous value rather than silently writing NaN.
-      input.value = labelOf(
-        options.find((option) => option.id === current) ?? { id: current, name: '' }
-      );
-      return;
-    }
+  const selectedLabel = () =>
+    labelOf(options.find((option) => option.id === selected) ?? { id: selected, name: '' });
+
+  const close = () => {
+    list.hidden = true;
+    highlighted = -1;
+    input.setAttribute('aria-expanded', 'false');
+    input.value = selectedLabel();
     input.classList.remove('invalid');
-    onChange(id);
-    input.value = labelOf(
-      options.find((option) => option.id === id) ?? { id, name: '' }
-    );
   };
-  input.onchange = commit;
-  input.onblur = commit;
 
-  const wrapper = el('div', { class: 'ref-control' });
-  wrapper.append(input, datalist);
+  const choose = (option: RefOption) => {
+    selected = option.id;
+    input.value = labelOf(option);
+    onChange(option.id);
+    close();
+  };
+
+  const renderList = (query: string) => {
+    const q = query.trim().toLowerCase();
+    visible = options.filter((option) => {
+      if (!q) return true;
+      const text = labelOf(option).toLowerCase();
+      return text.includes(q) || String(option.id) === q;
+    });
+    highlighted = -1;
+    list.replaceChildren();
+    if (visible.length === 0) {
+      list.append(el('li', { class: 'search-select-empty', text: 'No matches' }));
+    } else {
+      visible.forEach((option, index) => {
+        const item = el('li', { class: 'search-select-option', text: labelOf(option) });
+        item.setAttribute('role', 'option');
+        item.onmousedown = (e) => { e.preventDefault(); choose(option); };
+        item.onmouseenter = () => { highlighted = index; refreshHighlight(); };
+        list.append(item);
+      });
+    }
+    list.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  };
+
+  const refreshHighlight = () => {
+    [...list.children].forEach((node, index) => {
+      node.classList.toggle('highlighted', index === highlighted);
+    });
+    const node = list.children[highlighted];
+    node?.scrollIntoView?.({ block: 'nearest' });
+  };
+
+  const open = () => {
+    renderList('');
+    input.select();
+  };
+
+  input.onfocus = open;
+  input.onclick = () => { if (list.hidden) open(); };
+  input.oninput = () => renderList(input.value);
+  input.onblur = () => {
+    // Let an option's mousedown finish before closing.
+    setTimeout(() => {
+      if (!list.hidden) close();
+    }, 0);
+  };
+  toggle.onmousedown = (e) => e.preventDefault();
+  toggle.onclick = () => { if (list.hidden) open(); else close(); };
+  input.onkeydown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (list.hidden) open();
+      highlighted = Math.min(highlighted + 1, visible.length - 1);
+      refreshHighlight();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      highlighted = Math.max(highlighted - 1, 0);
+      refreshHighlight();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const option = visible[highlighted] ?? visible[0];
+      if (option) choose(option);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      input.blur();
+    }
+  };
+
+  input.value = selectedLabel();
   return wrapper;
 }
 
