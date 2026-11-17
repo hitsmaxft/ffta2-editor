@@ -111,7 +111,14 @@ async function applyOpened(opened: OpenedRom): Promise<void> {
   refreshButtons();
   renderTabs();
   renderContent();
-  setStatus(`Loaded ${opened.name} — ${data.archive?.files.length ?? 0} archive entries.`);
+  const hasDoubleByte = data.messageList.some((t) =>
+    t.strings.some((s) => /<unknown:[0-9A-Fa-f]{4}>/.test(s.string))
+  );
+  setStatus(
+    hasDoubleByte && !data.wordTable
+      ? `Loaded ${opened.name} — Chinese double-byte text detected. Click "Word Table…" and load FFTA2-US-CHS V4.1 glyphs.json.`
+      : `Loaded ${opened.name} — ${data.archive?.files.length ?? 0} archive entries.`
+  );
 }
 
 async function loadWordTableFile(file: File): Promise<void> {

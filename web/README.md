@@ -7,6 +7,10 @@ model serialization and minimal NDS save path.
 
 ## Run
 
+The production build is a single static page with relative asset paths, so it
+works at a domain root or under a GitHub Pages project path. Pushing `main`
+deploys it via `.github/workflows/deploy-pages.yml`.
+
 ```bash
 cd web
 npm ci
@@ -16,6 +20,13 @@ npm run dev
 Open the printed URL, then **Open ROM…** and select an `.nds` file. In Chromium
 the File System Access API is used to write only the changed byte spans back to
 the same file. In other browsers, saving downloads the patched ROM.
+
+- Official FFTA2 ROM: open the `.nds` directly.
+- Chinese FFTA2 ROM: open the `.nds`, then click **Word Table…** and load the
+  FFTA2-US-CHS V4.1 `glyphs.json` (see below). The editor detects double-byte
+  text and shows a hint when a word table is needed.
+- GitHub Pages: <https://hitsmaxft.github.io/ffta2-editor/> after the workflow
+  runs.
 
 For development you can auto-load a served ROM:
 

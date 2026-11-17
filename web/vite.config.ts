@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  // Relative asset URLs work both at a domain root and under a GitHub Pages
+  // project path (e.g. https://user.github.io/ffta2-editor/).
+  base: './',
   server: {
     fs: {
       // Allow serving the sibling data/ directory for dev ROM auto-load (?rom=).
