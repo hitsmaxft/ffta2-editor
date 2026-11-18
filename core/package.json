@@ -1,0 +1,14 @@
+{
+  "name": "@ffta2-editor/core",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "exports": {
+    ".": { "types": "./dist/types/api/index.d.ts", "import": "./dist/index.js" },
+    "./schema": "./schema/dataset-v1.json",
+    "./layout": "./schema/layout-v1.json"
+  },
+  "bin": { "ffta2-export": "./dist/cli.mjs" },
+  "files": ["dist", "schema", "examples", "README.md"]
+}

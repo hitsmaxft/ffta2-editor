@@ -58,3 +58,6 @@ npm run build
 - Select the Agent Job and go to the Other tab and enable `Can change jobs`.
 - Create a new Job Requirement. Set it as unique to Al-Cid.
 - Set the Agent Job's `Job Requirement` field (in the Other tab) to match the index of the one you just created.
+## Reusable ROM analysis and guide data
+
+[FFTA2 Editor Core](core/README.md) provides a DOM-free, read-only TypeScript API, a SHA-bound export CLI, and versioned JSON schemas. Guide sites consume verified packages for jobs, skills, equipment, recruitment and quests. ROMs, extracted images, private charsets and generated game-text packages stay local.

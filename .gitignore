@@ -42,3 +42,10 @@ node_modules/
 # Local-only reference fixture containing game-derived ability names.
 # Kept on developer machines for parity tests, not distributed in git.
 web/test/fixtures/ability/abilityId.json
+
+# Rebuildable core artifacts; private exports never belong in the source tree.
+core/dist/
+*.nds
+*.sav
+*.dsv
+exports/

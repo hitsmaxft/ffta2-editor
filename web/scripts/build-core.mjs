@@ -1,0 +1,15 @@
+import { build } from 'esbuild';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+const root = new URL('../', import.meta.url);
+const output = new URL('../../core/dist/', import.meta.url);
+mkdirSync(output, { recursive: true });
+execFileSync(process.execPath, [new URL('./generate-analysis-flags.mjs', import.meta.url).pathname], { stdio: 'inherit' });
+await build({ absWorkingDir: root.pathname, entryPoints: ['src/api/index.ts'], bundle: true, platform: 'neutral', format: 'esm', outfile: new URL('index.js', output).pathname });
+await build({ absWorkingDir: root.pathname, entryPoints: ['scripts/export-rom.ts'], bundle: true, platform: 'node', format: 'esm', outfile: new URL('cli.mjs', output).pathname });
+execFileSync(new URL('../node_modules/.bin/tsc', import.meta.url).pathname, ['-p', 'tsconfig.core.json'], { cwd: root, stdio: 'inherit' });
+const api = await import(pathToFileURL(new URL('index.js', output).pathname).href);
+writeFileSync(new URL('../../core/schema/dataset-v1.json', import.meta.url), api.canonicalJson(api.DATASET_JSON_SCHEMA));
+writeFileSync(new URL('../../core/schema/layout-v1.json', import.meta.url), api.canonicalJson(api.getLayout()));
+console.log(`Built @ffta2-editor/core ${api.CORE_VERSION}`);

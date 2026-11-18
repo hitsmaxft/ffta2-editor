@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { openImageSession, sha256 } from '../src/api/index';
 import { loadRom } from '../src/data/load';
 import { loadAll } from '../src/data/orchestration';
 import { getUnitSpriteState } from '../src/data/controllers/sprites';
@@ -9,6 +10,19 @@ import { renderFace, renderTopSprite, renderUnitSprite, renderIndexedTexture } f
 // Explicit local opt-in; no ROM or extracted image fixtures are bundled.
 const path = process.env.FFTA2_PREVIEW_ROM;
 describe.skipIf(!path)('job images from an open ROM', () => {
+  it('provides SHA-bound in-memory images through the public API', async () => {
+    const bytes = new Uint8Array(readFileSync(path!));
+    const digest = await sha256(bytes);
+    await expect(openImageSession(bytes, '0'.repeat(64))).rejects.toMatchObject({ code: 'ROM_SHA_MISMATCH' });
+    const images = await openImageSession(bytes, digest);
+    expect(images.romSha256).toBe(digest);
+    expect(images.counts.portraits).toBeGreaterThan(100);
+    expect(images.portrait(1)?.pixels.some((value, i) => i % 4 === 3 && value !== 0)).toBe(true);
+    expect(images.unitSprite(1)?.pixels.length).toBeGreaterThan(0);
+    expect(images.portrait(100000)).toBeNull();
+    expect(images.mapTexture(100000)).toBeNull();
+    expect(await sha256(bytes)).toBe(digest);
+  });
   it('decodes every referenced job image without changing model bytes or source cursors', () => {
     const bytes = new Uint8Array(readFileSync(path!));
     const hash = () => createHash('sha256').update(bytes).digest('hex');
