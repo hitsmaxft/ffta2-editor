@@ -50,7 +50,7 @@ npm run dev -- --open '/?rom=/data/extracted/your-rom.nds'
   dropdowns; record fields are grouped into sections. Nested records, arrays,
   bit flags and hex byte arrays remain editable. Read-only domains
   (sprites/maps) are still inspectable.
-- UI language switch: English / 简体中文, persisted in localStorage and auto-detected
+- UI language switch: English / 中文, persisted in localStorage and auto-detected
   from the browser locale. Fields, all enum choices, nested headings, reference
   fallbacks and known equipment/job/race/region bits have Chinese labels.
 - Chinese mode adds 2,987 category-scoped display-name translations for jobs,
