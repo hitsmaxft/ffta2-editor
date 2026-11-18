@@ -14,6 +14,7 @@ import { getAuctionInfoList, getLawBonusStoryRequirements, setLawBonusStoryRequi
 import { fieldLabel, gameName, t } from './i18n';
 import { fieldMeta, groupFor, refOptions } from './schema';
 import { flagLabel } from './flagLabels';
+import { imagePreviews } from './imagePreview';
 import { enumInput, referenceInput } from './referenceSelect';
 
 type Rec = Record<string, unknown>;
@@ -293,6 +294,9 @@ function renderRecord(detail: HTMLElement, data: RomData, opts: ModelTabOpts, re
   }
   header.append(actions);
   detail.append(header);
+  const previews = imagePreviews(data, opts.id, rec, selected);
+  if (previews) detail.append(previews.element);
+  const changed = () => { markDirty(); previews?.refresh(); };
 
   const groups = new Map<string, Array<[string, unknown]>>();
   for (const [key, value] of Object.entries(rec)) {
@@ -307,7 +311,7 @@ function renderRecord(detail: HTMLElement, data: RomData, opts: ModelTabOpts, re
     section.append(el('h3', { class: 'record-section-title', text: t(group as Parameters<typeof t>[0]) }));
     const form = el('div', { class: 'form' });
     for (const [key, value] of entries) {
-      renderValue(form, rec, key, value, data, opts.id, markDirty, 0);
+      renderValue(form, rec, key, value, data, opts.id, changed, 0);
     }
     section.append(form);
     detail.append(section);

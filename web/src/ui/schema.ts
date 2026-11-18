@@ -135,7 +135,7 @@ export function refOptions(data: RomData, kind: RefKind): RefOption[] {
       options = data.auctionPrizeTableList.map((t) => ({ id: t.id, name: referenceName('auctionPrizeTable', t.id) }));
       break;
     case 'face':
-      options = data.unitFaces.map((f) => ({ id: f.id, name: referenceName('face', f.id) }));
+      options = data.unitFaces.map((_, index) => ({ id: index, name: referenceName('face', index) }));
       break;
     case 'topSprite':
       options = data.topSprites.map((s) => ({ id: s.id, name: referenceName('topSprite', s.id) }));

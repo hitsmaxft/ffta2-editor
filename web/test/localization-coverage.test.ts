@@ -54,9 +54,9 @@ describe('extended Chinese UI', () => {
     data.jobNames[0].string = 'Thief';
     expect(refOptions(data, 'job')).toEqual([{ id: 1, name: '盗贼（Thief）' }]);
     data.unitFaces = [{ id: 2 }] as RomData['unitFaces'];
-    expect(refOptions(data, 'face')).toEqual([{ id: 2, name: '头像 #2' }]);
+    expect(refOptions(data, 'face')).toEqual([{ id: 0, name: '头像 #0' }]);
     setLanguage('en');
-    expect(refOptions(data, 'face')).toEqual([{ id: 2, name: 'Face #2' }]);
+    expect(refOptions(data, 'face')).toEqual([{ id: 0, name: 'Face #0' }]);
   });
 
   it('renders translated nested cards and flags, and edits the original bit', () => {

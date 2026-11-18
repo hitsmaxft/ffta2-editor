@@ -2,7 +2,8 @@
 // model/topSprite/TopSprite.java and model/unitFace/UnitFace.java.
 // Pure record/data parsers: raw byte arrays are kept as Uint8Array, JavaFX
 // properties become plain fields, and all BufferedImage/rendering code is
-// skipped (TopSprite/UnitFace serialize their raw arrays, not rendered output).
+// kept in ../render/jobImages.ts (TopSprite/UnitFace serialize their raw arrays,
+// not rendered output).
 
 import { Bytes, toSignedByte, toUnsignedByte } from '../../core/binary';
 import * as LZSS from '../../core/lzss';

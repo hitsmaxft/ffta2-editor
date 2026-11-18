@@ -60,6 +60,12 @@ npm run dev -- --open '/?rom=/data/extracted/your-rom.nds'
   for sources, regeneration and verification boundaries.
 - Save uses a minimal in-place patch plan. Changed files that fit their original
   FAT span are overwritten; grown files are appended and the FAT/header updated.
+- Runtime image previews for jobs: allied/enemy portraits, primary and alternate
+  unit sprites, and top sprites. The face/unit/top-sprite tabs also show previews
+  with frame selection and, for unit sprites, palette selection. Changing a job's
+  image reference or palette immediately redraws its previews. Pixels are decoded
+  from the open ROM into in-memory canvases; no extracted image assets, image
+  downloads, uploads or persistent image caches are used.
 - The optional ARM9/overlay code patches from the Java `PatchesController`
   (animation fix, signed equipment stats, MP gain, etc.) are not ported yet.
   The expanded-top-sprite layout detection *is* ported because it changes the
@@ -156,3 +162,17 @@ The current local verification result is all payloads identical:
 - `oracle_acc_arm9.bin` / `oracle_acc_overlay11.bin` == TS patched arm9/overlay
 - Applying either payload to the same ROM copy produces identical final `.nds`
   bytes (`test/acceptance.test.ts`).
+
+## Runtime image checks
+
+Pixel decoding tests use synthetic data (BGR555, transparency, LZSS sprite
+pieces, portrait assembly and tiled 4bpp top sprites). UI tests verify reference
+changes and frame selection without modifying image data. To opt into job-image
+and UI checks against a local ROM without copying it into the project:
+
+```sh
+FFTA2_PREVIEW_ROM=/absolute/path/to/game.nds npx vitest run test/job-images-realrom.test.ts test/ui-smoke.test.ts
+```
+
+These checks do not extract image files or save the ROM. Actual browser layout
+and screenshot verification is separate from DOM tests.

@@ -7,6 +7,11 @@ export type Language = 'en' | 'zh-CN';
 
 const en = {
   'lang.label': 'Language',
+  'preview.title': 'ROM images',
+  'preview.empty': 'No image',
+  'preview.failed': 'Preview unavailable',
+  'preview.frame': 'Frame',
+  'preview.palette': 'Palette',
   'group.other': 'Other',
   'ref.noMatches': 'No matches',
   'ref.none': '(none)',
@@ -116,6 +121,11 @@ type Key = TranslationKey;
 
 const zh: Record<Key, string> = {
   'lang.label': '语言',
+  'preview.title': 'ROM 图片',
+  'preview.empty': '无图片',
+  'preview.failed': '预览不可用',
+  'preview.frame': '帧',
+  'preview.palette': '调色板',
   'group.other': '其他',
   'ref.noMatches': '没有匹配项',
   'ref.none': '（无）',

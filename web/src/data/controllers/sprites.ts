@@ -1,5 +1,6 @@
 // Port of SpritesController.loadSprites / saveSprites (data logic only).
-// JavaFX/awt rendering (SpriteCell/getSprite/setSprite/getImage) is skipped.
+// Runtime canvas previews use the pure pixel decoders in ../render/jobImages.ts;
+// JavaFX/awt image-editing methods are not part of this data controller.
 //
 // The DATA portion of the Java utility/UnitSprite wrapper is inlined here as
 // UnitSpriteState: palette-size resolution (32 vs 128 colors), the per-sprite

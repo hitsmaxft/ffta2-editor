@@ -229,3 +229,13 @@ button.primary { background: var(--accent); color: #10131a; border-color: var(--
 
 .flag span { overflow-wrap: anywhere; }
 .flag input { flex-shrink: 0; }
+
+/* ROM-derived previews live only in canvas memory. */
+.rom-image-previews { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 12px; margin: 12px 0 20px; }
+.rom-image-card { margin: 0; min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.rom-image-card figcaption { color: var(--muted); font-size: 12px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.rom-image-viewport { height: 196px; display: flex; align-items: center; justify-content: center; overflow: auto; background-color: var(--panel-2); background-image: conic-gradient(#ffffff08 25%, transparent 0 50%, #ffffff08 0 75%, transparent 0); background-size: 16px 16px; }
+.rom-image-viewport canvas { image-rendering: pixelated; flex-shrink: 0; object-fit: contain; }
+.rom-image-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.rom-image-controls label { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 4px; }
+.rom-image-controls input { width: 64px; background: var(--panel-2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 4px; }

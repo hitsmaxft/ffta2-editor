@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadRom } from '../src/data/load';
 import { loadAll } from '../src/data/orchestration';
 import { fixturesDir } from './helpers';
 import { setLanguage } from '../src/ui/i18n';
+import { getUnitSpriteState } from '../src/data/controllers/sprites';
 import {
   textTab,
 } from '../src/ui/textEditor';
@@ -18,7 +19,7 @@ import {
 
 const romDir = join(fixturesDir, '../../../data/extracted');
 const romFile = existsSync(romDir) ? readdirSync(romDir).find((f) => f.endsWith('.nds')) : undefined;
-const romPath = romFile ? join(romDir, romFile) : null;
+const romPath = process.env.FFTA2_PREVIEW_ROM ?? (romFile ? join(romDir, romFile) : null);
 
 const TABS = [
   textTab, jobTab, jobGroupTab, jobRequirementTab, characterTab, abilityTab, abilitySetTab,
@@ -26,6 +27,18 @@ const TABS = [
   formationTab, questTab, bazaarTab, bazaarRecipeTab, auctionTab, auctionPrizeTab,
   auctionGrandPrizeTab, mapTab, unitSpriteTab, topSpriteTab, faceTab,
 ];
+
+const drawn = new Map<HTMLCanvasElement, Uint8ClampedArray>();
+beforeEach(() => {
+  drawn.clear();
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+    return {
+      createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
+      putImageData: (bitmap: ImageData) => { drawn.set(this, bitmap.data.slice()); },
+    } as unknown as CanvasRenderingContext2D;
+  });
+});
+afterEach(() => vi.restoreAllMocks());
 
 describe.skipIf(!romPath)('web UI smoke test on a real ROM', () => {
   const rom = romPath ? new Uint8Array(readFileSync(romPath)) : new Uint8Array(0);
@@ -64,6 +77,33 @@ describe.skipIf(!romPath)('web UI smoke test on a real ROM', () => {
     } finally {
       setLanguage('en');
     }
+  });
+
+  it('refreshes real job sprite pixels when its palette is edited', () => {
+    setLanguage('en');
+    const data = loadRom(rom); loadAll(data);
+    const container = document.createElement('div');
+    let dirty = 0;
+    jobTab.render(container, data, () => { dirty++; });
+    container.querySelectorAll<HTMLElement>('.record-list li')[1].click();
+    const job = data.jobDataList[1];
+    const selector = `canvas[aria-label="Unit Sprite #${job.unitSprite}"]`;
+    const initial = container.querySelector<HTMLCanvasElement>(selector)!;
+    expect(initial).not.toBeNull();
+    const before = drawn.get(initial)!;
+    expect(before.some((value, i) => i % 4 === 3 && value > 0)).toBe(true);
+    const state = getUnitSpriteState(data.unitSstList[job.unitSprite])!;
+    const count = state.spritePalettes!.palettes.length;
+    expect(count).toBeGreaterThan(1);
+    const original = job.unitPalette;
+    const label = container.querySelector('label[title="unitPalette"]')!;
+    const input = label.nextElementSibling as HTMLInputElement;
+    input.value = String((original + 1) % count);
+    input.dispatchEvent(new Event('change'));
+    expect(job.unitPalette).toBe((original + 1) % count);
+    expect(drawn.get(container.querySelector<HTMLCanvasElement>(selector)!)).not.toEqual(before);
+    expect(dirty).toBe(1);
+    expect(state.hasChanged).toBe(false);
   });
 
   it('edits a numeric job field through the generated form and adds a record', () => {
