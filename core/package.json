@@ -10,5 +10,5 @@
     "./layout": "./schema/layout-v1.json"
   },
   "bin": { "ffta2-export": "./dist/cli.mjs" },
-  "files": ["dist", "schema", "examples", "README.md"]
+  "files": ["dist", "schema", "examples", "README.md", "LICENSE"]
 }
