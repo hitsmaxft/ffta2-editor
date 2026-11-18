@@ -3,7 +3,7 @@ import { Bytes } from '../src/core/binary';
 import { encode } from '../src/core/lzss';
 import { SpriteData, SpritePalettes, TopSprite, UnitFace } from '../src/data/model/sprites';
 import type { UnitSpriteState } from '../src/data/controllers/sprites';
-import { decodePalette, renderFace, renderTopSprite, renderUnitSprite } from '../src/data/render/jobImages';
+import { decodePalette, renderFace, renderTopSprite, renderUnitSprite, renderIndexedTexture } from '../src/data/render/jobImages';
 
 const pixel = (pixels: Uint8ClampedArray, index: number) => [...pixels.slice(index * 4, index * 4 + 4)];
 
@@ -101,4 +101,13 @@ describe('ROM image pixels', () => {
     const large = testFace(); large.pieces.push({ ...large.pieces[0], offsetX: 1000000 });
     expect(() => renderFace(large)).toThrow('Invalid image dimensions');
   });
+  it('previews 8bpp map textures with the selected palette and validates their bounds', () => {
+    const palette = new Uint8Array(512); palette[2] = 31;
+    const out = renderIndexedTexture(2, 2, new Uint8Array([1, 0, 0, 1]), palette);
+    expect(pixel(out.pixels, 0)).toEqual([255, 0, 0, 255]);
+    expect(pixel(out.pixels, 1)[3]).toBe(0);
+    expect(() => renderIndexedTexture(2, 2, new Uint8Array(1), palette)).toThrow('Incomplete');
+    expect(() => renderIndexedTexture(0, 2, new Uint8Array(0), palette)).toThrow('Invalid');
+  });
+
 });

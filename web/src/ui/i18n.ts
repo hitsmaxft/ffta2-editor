@@ -8,6 +8,8 @@ export type Language = 'en' | 'zh-CN';
 const en = {
   'lang.label': 'Language',
   'preview.title': 'ROM images',
+  'preview.unmapped': 'Image mapping unconfirmed',
+  'preview.mapTexture': 'Map texture',
   'preview.empty': 'No image',
   'preview.failed': 'Preview unavailable',
   'preview.frame': 'Frame',
@@ -122,6 +124,8 @@ type Key = TranslationKey;
 const zh: Record<Key, string> = {
   'lang.label': '语言',
   'preview.title': 'ROM 图片',
+  'preview.unmapped': '图片映射待确认',
+  'preview.mapTexture': '地图纹理',
   'preview.empty': '无图片',
   'preview.failed': '预览不可用',
   'preview.frame': '帧',

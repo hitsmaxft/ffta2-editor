@@ -106,6 +106,34 @@ describe.skipIf(!romPath)('web UI smoke test on a real ROM', () => {
     expect(state.hasChanged).toBe(false);
   });
 
+  it('renders equipment and linked items and redraws a changed equipment palette', () => {
+    setLanguage('en');
+    const data = loadRom(rom); loadAll(data);
+    const container = document.createElement('div');
+    let dirty = 0;
+    equipmentTab.render(container, data, () => { dirty++; });
+    container.querySelectorAll<HTMLElement>('.record-list li')[1].click();
+    const equipment = data.equipmentList[1];
+    const first = container.querySelector<HTMLCanvasElement>('canvas')!;
+    expect(first).not.toBeNull();
+    expect(first.getAttribute('aria-label')).toContain(data.itemNames[equipment.id].string);
+    const before = drawn.get(first)!;
+    const source = getUnitSpriteState(data.unitSstList[equipment.sprite])!;
+    const palettes = source.spritePalettes!.palettes.length;
+    expect(palettes).toBeGreaterThan(1);
+    expect(container.querySelector('label[title="sprite"]')!.nextElementSibling!.className).toContain('search-select');
+    const paletteInput = container.querySelector('label[title="palette"]')!.nextElementSibling as HTMLInputElement;
+    paletteInput.value = String((equipment.palette + 1) % palettes);
+    paletteInput.dispatchEvent(new Event('change'));
+    expect(drawn.get(container.querySelector('canvas')!)).not.toEqual(before);
+    expect(dirty).toBe(1);
+    expect(source.hasChanged).toBe(false);
+    data.itemTableList[0].item1 = equipment.id;
+    const linked = document.createElement('div');
+    itemTableTab.render(linked, data, () => { throw new Error('Preview changed data'); });
+    expect(linked.querySelector('canvas')).not.toBeNull();
+  });
+
   it('edits a numeric job field through the generated form and adds a record', () => {
     const data = loadRom(rom);
     loadAll(data);

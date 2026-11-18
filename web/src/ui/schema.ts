@@ -294,7 +294,7 @@ const schemas: Record<string, Record<string, FieldMeta>> = {
     ...common,
     ability: ref('activeAbility'),
   },
-  equipment: { ...common },
+  equipment: { ...common, sprite: ref('unitSprite') },
   consumables: {},
   loot: { category: en(LootCategory), rank: en(LootRank) },
   itemTables: { ...common },

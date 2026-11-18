@@ -6,6 +6,8 @@ import { imagePreviews } from '../src/ui/imagePreview';
 import { makeModelTab } from '../src/ui/modelEditor';
 import { refOptions } from '../src/ui/schema';
 import { setLanguage } from '../src/ui/i18n';
+import { EquipmentData } from '../src/data/model/item';
+import { Bytes } from '../src/core/binary';
 
 let draws: Uint8ClampedArray[];
 beforeEach(() => {
@@ -82,6 +84,35 @@ describe('runtime ROM image previews', () => {
     const data = dataWithImages(); data.unitFaces[1].palette = new Uint8Array(0);
     expect(imagePreviews(data, 'faces', {}, 1)!.element.textContent).toContain('预览不可用');
     expect(imagePreviews(data, 'faces', {}, 0)!.element.textContent).toContain('无图片');
-    expect(imagePreviews(data, 'equipment', {}, 0)).toBeNull();
+    expect(imagePreviews(data, 'abilities', {}, 0)).toBeNull();
   });
+  it('shows equipment and nested reward item previews using their actual sprite references', () => {
+    const data = dataWithImages();
+    const equipment = new EquipmentData(Bytes.alloc(40), 7);
+    equipment.sprite = -1;
+    data.equipmentList = [equipment];
+    data.itemNames = [{ id: 7, string: 'Test sword' }, { id: 8, string: 'Potion' }];
+    const direct = imagePreviews(data, 'equipment', equipment as unknown as Record<string, unknown>, 0)!;
+    expect(direct.element.textContent).toContain('Test sword #7');
+    expect(direct.element.querySelector('canvas')).toBeNull();
+    equipment.sprite = 0;
+    direct.refresh();
+    expect(direct.element.querySelector('canvas')).toBeNull();
+    const nested = imagePreviews(data, 'quests', { data: { itemReward1: { item: 7, amount: 1 }, itemReward2: { item: 8, amount: 1 } } }, 0)!;
+    expect(nested.element.querySelectorAll('figure')).toHaveLength(2);
+    expect(nested.element.textContent).toContain('Potion #8');
+    expect(nested.element.textContent).toContain('Image mapping unconfirmed');
+    expect(equipment.hasOwnProperty('hasChanged')).toBe(false);
+  });
+
+  it('does not infer consumable images from item IDs and includes character previews', () => {
+    const data = dataWithImages();
+    data.itemNames = [{ id: 412, string: 'Potion' }];
+    const consumable = imagePreviews(data, 'consumables', { id: 412 }, 1)!;
+    expect(consumable.element.textContent).toContain('Image mapping unconfirmed');
+    expect(consumable.element.querySelector('canvas')).toBeNull();
+    const character = imagePreviews(data, 'characters', { unitPortrait: 1, enemyPortrait: 2 }, 1)!;
+    expect(character.element.querySelectorAll('canvas')).toHaveLength(2);
+  });
+
 });

@@ -105,3 +105,12 @@ export function renderUnitSprite(state: UnitSpriteState, frame = 0, paletteIndex
   }
   return out;
 }
+
+// Raw 8bpp map texture view; no assumptions about map geometry or FX layers.
+export function renderIndexedTexture(width: number, height: number, indices: Uint8Array, paletteBytes: Uint8Array): PixelImage {
+  const out = image(width, height);
+  if (indices.length < width * height || paletteBytes.length !== 512) throw new Error('Incomplete indexed texture');
+  const palette = decodePalette(paletteBytes);
+  for (let i = 0; i < width * height; i++) out.pixels.set(palette.subarray(indices[i] * 4, indices[i] * 4 + 4), i * 4);
+  return out;
+}

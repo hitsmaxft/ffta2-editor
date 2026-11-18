@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { loadRom } from '../src/data/load';
 import { loadAll } from '../src/data/orchestration';
 import { getUnitSpriteState } from '../src/data/controllers/sprites';
-import { renderFace, renderTopSprite, renderUnitSprite } from '../src/data/render/jobImages';
+import { renderFace, renderTopSprite, renderUnitSprite, renderIndexedTexture } from '../src/data/render/jobImages';
 
 // Explicit local opt-in; no ROM or extracted image fixtures are bundled.
 const path = process.env.FFTA2_PREVIEW_ROM;
@@ -37,6 +37,28 @@ describe.skipIf(!path)('job images from an open ROM', () => {
       }
       expect(job.toBytes()).toEqual(jobs[index]);
     }
+    let equipmentImages = 0;
+    let equipmentWithoutSprite = 0;
+    for (const equipment of data.equipmentList) {
+      if (!equipment.id) continue;
+      const before = equipment.toBytes();
+      const sst = equipment.sprite > 0 ? data.unitSstList[equipment.sprite] : undefined;
+      const state = sst ? getUnitSpriteState(sst) : undefined;
+      const preview = state ? renderUnitSprite(state, 0, equipment.palette & 255) : null;
+      if (preview) equipmentImages++;
+      else equipmentWithoutSprite++;
+      expect(equipment.toBytes()).toEqual(before);
+    }
+    let mapTextures = 0;
+    for (const map of data.maps) {
+      if (!map.texture.length || !map.palettes.length) continue;
+      const texture = renderIndexedTexture(map.width, map.height, map.texture, map.palettes[0]);
+      expect(texture.pixels.length).toBe(map.width * map.height * 4);
+      mapTextures++;
+    }
+    expect(equipmentImages).toBeGreaterThan(100);
+    expect(mapTextures).toBeGreaterThan(0);
+    console.info('Equipment / map runtime coverage:', JSON.stringify({ equipmentImages, equipmentWithoutSprite, mapTextures }));
     expect(hash()).toBe(original);
     expect(stats.portraits).toBeGreaterThan(100);
     expect(stats.sprites).toBeGreaterThan(100);

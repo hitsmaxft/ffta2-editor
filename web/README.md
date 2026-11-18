@@ -60,12 +60,19 @@ npm run dev -- --open '/?rom=/data/extracted/your-rom.nds'
   for sources, regeneration and verification boundaries.
 - Save uses a minimal in-place patch plan. Changed files that fit their original
   FAT span are overwritten; grown files are appended and the FAT/header updated.
-- Runtime image previews for jobs: allied/enemy portraits, primary and alternate
-  unit sprites, and top sprites. The face/unit/top-sprite tabs also show previews
-  with frame selection and, for unit sprites, palette selection. Changing a job's
-  image reference or palette immediately redraws its previews. Pixels are decoded
-  from the open ROM into in-memory canvases; no extracted image assets, image
-  downloads, uploads or persistent image caches are used.
+- Runtime image previews for jobs and characters: allied/enemy portraits,
+  primary/alternate unit sprites and top sprites. Equipment pages preview the
+  record's battle sprite and palette; item tables, bazaar recipes, quest rewards,
+  auction prizes and formation equipment show their linked equipment images.
+  The original ROM leaves some equipment battle-sprite fields at zero; these
+  are shown as unconfigured instead of displaying unit zero as an item image.
+- Face/unit/top-sprite pages support frame selection and unit palettes. The map
+  page shows its raw texture with palette selection (not a reconstruction of
+  map geometry or FX layers). Changing an image reference or palette redraws
+  its preview. Images are decoded from the open ROM into in-memory canvases;
+  no extracted image assets, uploads or persistent image caches are used.
+- Consumable/loot image mappings are not established by the current models.
+  These items are marked as unconfirmed rather than guessed from item IDs.
 - The optional ARM9/overlay code patches from the Java `PatchesController`
   (animation fix, signed equipment stats, MP gain, etc.) are not ported yet.
   The expanded-top-sprite layout detection *is* ported because it changes the
