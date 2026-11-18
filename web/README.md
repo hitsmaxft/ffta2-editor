@@ -51,7 +51,13 @@ npm run dev -- --open '/?rom=/data/extracted/your-rom.nds'
   bit flags and hex byte arrays remain editable. Read-only domains
   (sprites/maps) are still inspectable.
 - UI language switch: English / 简体中文, persisted in localStorage and auto-detected
-  from the browser locale.
+  from the browser locale. Fields, all enum choices, nested headings, reference
+  fallbacks and known equipment/job/race/region bits have Chinese labels.
+- Chinese mode adds 2,987 category-scoped display-name translations for jobs,
+  abilities, items, characters, quests, laws, bazaar sets and locations. Exact
+  English matches display as Chinese + original, supporting bilingual search;
+  custom names and ROM text are preserved. See [UI localization notes](UI-LOCALIZATION.md)
+  for sources, regeneration and verification boundaries.
 - Save uses a minimal in-place patch plan. Changed files that fit their original
   FAT span are overwritten; grown files are appended and the FAT/header updated.
 - The optional ARM9/overlay code patches from the Java `PatchesController`

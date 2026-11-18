@@ -185,7 +185,7 @@ button.primary { background: var(--accent); color: #10131a; border-color: var(--
 .flags-head { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
 .flags-head span { flex: 1; }
 .flags-head button { padding: 2px 8px; font-size: 11px; }
-.flags-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px 8px; }
+.flags-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr)); gap: 4px 8px; }
 .flag { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; }
 .flag input { width: auto; }
 
@@ -226,3 +226,6 @@ button.primary { background: var(--accent); color: #10131a; border-color: var(--
 .search-select-option { padding: 5px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .search-select-option:hover, .search-select-option.highlighted { background: var(--accent); color: #10131a; }
 .search-select-empty { padding: 8px; color: var(--muted); }
+
+.flag span { overflow-wrap: anywhere; }
+.flag input { flex-shrink: 0; }

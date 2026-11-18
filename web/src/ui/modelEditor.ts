@@ -11,8 +11,9 @@ import { EditorTab } from './textEditor';
 import { el, clear, recordList, searchBox, numberInput, textInput, textArea } from './widgets';
 import { Flags } from '../data/model/flags';
 import { getAuctionInfoList, getLawBonusStoryRequirements, setLawBonusStoryRequirements } from '../data/controllers/item';
-import { fieldLabel, t } from './i18n';
+import { fieldLabel, gameName, t } from './i18n';
 import { fieldMeta, groupFor, refOptions } from './schema';
+import { flagLabel } from './flagLabels';
 import { enumInput, referenceInput } from './referenceSelect';
 
 type Rec = Record<string, unknown>;
@@ -89,7 +90,7 @@ function primitiveRow(label: string, value: unknown, onChange: (v: unknown) => v
   return [el('label', { text: label }), textInput(String(value), (v) => onChange(v))];
 }
 
-function renderFlags(flags: Flags, markDirty: () => void): HTMLElement {
+function renderFlags(flags: Flags, tabId: string, key: string, markDirty: () => void): HTMLElement {
   const box = el('div', { class: 'flags-box' });
   const head = el('div', { class: 'flags-head' });
   const total = flags.length * 8;
@@ -107,7 +108,7 @@ function renderFlags(flags: Flags, markDirty: () => void): HTMLElement {
       const cb = el('input', { type: 'checkbox' });
       cb.checked = flags.get(i);
       cb.onchange = () => { flags.set(i, cb.checked); markDirty(); };
-      lbl.append(cb, el('span', { text: String(i) }));
+      lbl.append(cb, el('span', { text: flagLabel(tabId, key, i) }));
       nodes.push(lbl);
     }
     return nodes;
@@ -160,20 +161,20 @@ function renderValue(
       const [, fallback] = primitiveRow(label, value, (v) => { owner[key] = v; markDirty(); });
       ctrl = fallback;
     }
-    container.append(el('label', { text: label }), ctrl);
+    container.append(el('label', { text: label, title: key }), ctrl);
     return;
   }
 
   if (value instanceof Flags) {
-    container.append(el('label', { text: label }));
+    container.append(el('label', { text: label, title: key }));
     const wrap = el('div', { class: 'full' });
-    wrap.append(renderFlags(value, markDirty));
+    wrap.append(renderFlags(value, tabId, key, markDirty));
     container.append(wrap);
     return;
   }
 
   if (value instanceof Uint8Array) {
-    container.append(el('label', { text: label }));
+    container.append(el('label', { text: label, title: key }));
     const wrap = el('div', { class: 'full' });
     wrap.append(renderBytes(value, (v) => { owner[key] = v; markDirty(); }, markDirty));
     container.append(wrap);
@@ -189,7 +190,7 @@ function renderValue(
     arrayBox.append(el('p', { class: 'hint', text: t('model.itemCount', { count: items.length }) }));
     items.forEach((item, index) => {
       const card = el('details', { class: 'array-item' });
-      const summary = el('summary', { text: `${humanField(key)} #${index}` });
+      const summary = el('summary', { text: `${label} #${index}` });
       card.append(summary);
       if (item !== null && typeof item === 'object' && !Array.isArray(item) && !(item instanceof Uint8Array) && !(item instanceof Flags)) {
         const form = el('div', { class: 'form' });
@@ -363,13 +364,13 @@ export function makeModelTab(opts: ModelTabOpts): EditorTab {
   };
 }
 
-const nameAt = (table: { id: number; string: string }[] | undefined, id: number) =>
-  table?.find((s) => s.id === id)?.string ?? '';
+const nameAt = (table: { id: number; string: string }[] | undefined, id: number, category = '') =>
+  gameName(category, table?.find((s) => s.id === id)?.string ?? '');
 
 export const jobTab = makeModelTab({
   id: 'jobs', label: () => t('tab.jobs'), allowAdd: true, allowRemove: true,
   list: (d) => d.jobDataList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.jobNames, rec.id as number),
+  name: (d, rec) => nameAt(d.jobNames, rec.id as number, 'job'),
 });
 
 export const jobGroupTab = makeModelTab({
@@ -385,37 +386,37 @@ export const jobRequirementTab = makeModelTab({
 export const characterTab = makeModelTab({
   id: 'characters', label: () => t('tab.characters'), allowAdd: true, allowRemove: true,
   list: (d) => d.characterList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.characterNames, rec.name as number),
+  name: (d, rec) => nameAt(d.characterNames, rec.name as number, 'character'),
 });
 
 export const abilityTab = makeModelTab({
   id: 'abilities', label: () => t('tab.abilities'), allowAdd: true, allowRemove: true,
   list: (d) => d.activeAbilityList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.abilityNames, rec.id as number),
+  name: (d, rec) => nameAt(d.abilityNames, rec.id as number, 'ability'),
 });
 
 export const abilitySetTab = makeModelTab({
   id: 'abilitySets', label: () => t('tab.abilitySets'), allowAdd: true, allowRemove: true,
   list: (d) => d.abilitySetList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.abilitySetNames, rec.id as number),
+  name: (d, rec) => nameAt(d.abilitySetNames, rec.id as number, 'skill_school'),
 });
 
 export const equipmentTab = makeModelTab({
   id: 'equipment', label: () => t('tab.equipment'), allowAdd: true, allowRemove: true,
   list: (d) => d.equipmentList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.itemNames, rec.id as number),
+  name: (d, rec) => nameAt(d.itemNames, rec.id as number, 'item'),
 });
 
 export const consumableTab = makeModelTab({
   id: 'consumables', label: () => t('tab.consumables'), allowAdd: true, allowRemove: true,
   list: (d) => d.consumableList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.itemNames, rec.id as number),
+  name: (d, rec) => nameAt(d.itemNames, rec.id as number, 'item'),
 });
 
 export const lootTab = makeModelTab({
   id: 'loot', label: () => t('tab.loot'), allowAdd: true, allowRemove: true,
   list: (d) => d.lootList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.itemNames, rec.id as number),
+  name: (d, rec) => nameAt(d.itemNames, rec.id as number, 'item'),
 });
 
 export const itemTableTab = makeModelTab({
@@ -426,7 +427,7 @@ export const itemTableTab = makeModelTab({
 export const lawBonusTab = makeModelTab({
   id: 'lawBonuses', label: () => t('tab.lawBonuses'), allowAdd: true, allowRemove: true,
   list: (d) => d.lawBonusList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.lawNames, rec.id as number),
+  name: (d, rec) => nameAt(d.lawNames, rec.id as number, 'law'),
 });
 
 export const lawRequirementTab: EditorTab = {
@@ -457,19 +458,19 @@ export const formationTab = makeModelTab({
 export const questTab = makeModelTab({
   id: 'quests', label: () => t('tab.quests'), allowAdd: true, allowRemove: true,
   list: (d) => d.questDataList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.questNames, rec.id as number),
+  name: (d, rec) => nameAt(d.questNames, rec.id as number, 'quest'),
 });
 
 export const bazaarTab = makeModelTab({
   id: 'bazaar', label: () => t('tab.bazaar'), allowAdd: true, allowRemove: true,
   list: (d) => d.bazaarSetList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.bazaarSetNames, rec.id as number),
+  name: (d, rec) => nameAt(d.bazaarSetNames, rec.id as number, 'bazaar'),
 });
 
 export const bazaarRecipeTab = makeModelTab({
   id: 'bazaarRecipes', label: () => t('tab.bazaarRecipes'), allowAdd: true, allowRemove: true,
   list: (d) => d.bazaarRecipeList as unknown as Rec[],
-  name: (d, rec) => nameAt(d.itemNames, rec.item as number),
+  name: (d, rec) => nameAt(d.itemNames, rec.item as number, 'item'),
 });
 
 export const auctionTab = makeModelTab({

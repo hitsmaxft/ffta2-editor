@@ -11,7 +11,7 @@ import {
 import { SpecialRequirement, WeaponRequirement } from '../data/model/abilityRequirements';
 import { Targets, Effect, Accuracy, Modifier } from '../data/model/abilityEffect';
 import { getFormationName, questName } from '../data/controllers/quest';
-import type { TranslationKey } from './i18n';
+import { gameName, referenceName, t, type TranslationKey } from './i18n';
 
 export type RefKind =
   | 'character' | 'job' | 'ability' | 'activeAbility' | 'item' | 'equipment'
@@ -35,8 +35,8 @@ export interface RefOption {
 const ref = (kind: RefKind, label?: string): FieldMeta => ({ ref: kind, label });
 const en = (value: EnumDef, label?: string): FieldMeta => ({ enum: value, label });
 
-function nameAt(list: { id: number; string: string }[] | undefined, id: number): string {
-  return list?.find((entry) => entry.id === id)?.string ?? '';
+function nameAt(list: { id: number; string: string }[] | undefined, id: number, category: string): string {
+  return gameName(category, list?.find((entry) => entry.id === id)?.string ?? '');
 }
 
 function recordsToOptions<T extends { id: number }>(
@@ -50,17 +50,7 @@ function textOptions(list: { id: number; string: string }[] | undefined): RefOpt
   return (list ?? []).map((entry) => ({ id: entry.id, name: entry.string || `#${entry.id}` }));
 }
 
-const cache = new WeakMap<RomData, Map<RefKind, RefOption[]>>();
-
 export function refOptions(data: RomData, kind: RefKind): RefOption[] {
-  let perData = cache.get(data);
-  if (!perData) {
-    perData = new Map();
-    cache.set(data, perData);
-  }
-  const cached = perData.get(kind);
-  if (cached) return cached;
-
   let options: RefOption[];
   switch (kind) {
     case 'character':
@@ -81,7 +71,7 @@ export function refOptions(data: RomData, kind: RefKind): RefOption[] {
     case 'activeAbility':
       options = data.activeAbilityList.map((a) => ({
         id: a.id,
-        name: nameAt(data.abilityNames, a.id) || `Ability #${a.id}`,
+        name: nameAt(data.abilityNames, a.id, 'ability') || referenceName('activeAbility', a.id),
       }));
       break;
     case 'abilityHelpText':
@@ -93,33 +83,33 @@ export function refOptions(data: RomData, kind: RefKind): RefOption[] {
     case 'equipment':
       options = data.equipmentList.map((e) => ({
         id: e.id,
-        name: nameAt(data.itemNames, e.id) || `Equipment #${e.id}`,
+        name: nameAt(data.itemNames, e.id, 'item') || referenceName('equipment', e.id),
       }));
       break;
     case 'loot':
       options = data.lootList.map((l) => ({
         id: l.id,
-        name: nameAt(data.itemNames, l.id) || `Loot #${l.id}`,
+        name: nameAt(data.itemNames, l.id, 'item') || referenceName('loot', l.id),
       }));
       break;
     case 'itemTable':
       options = data.itemTableList.map((t) => ({
         id: t.id,
         name: `#${t.id}: ${[t.item1, t.item2, t.item3, t.item4]
-          .map((id) => nameAt(data.itemNames, id) || `#${id}`)
+          .map((id) => nameAt(data.itemNames, id, 'item') || `#${id}`)
           .join(' / ')}`,
       }));
       break;
     case 'abilitySet':
       options = data.abilitySetList.map((s) => ({
         id: s.id,
-        name: nameAt(data.abilitySetNames, s.id) || `Ability Set #${s.id}`,
+        name: nameAt(data.abilitySetNames, s.id, 'skill_school') || referenceName('abilitySet', s.id),
       }));
       break;
     case 'jobGroup':
       options = recordsToOptions(data.jobGroupList, (g) =>
-        `Job Group #${g.id}: ${[g.job1, g.job2, g.job3, g.job4]
-          .map((id) => nameAt(data.jobNames, id) || `#${id}`)
+        `${referenceName('jobGroup', g.id)}: ${[g.job1, g.job2, g.job3, g.job4]
+          .map((id) => nameAt(data.jobNames, id, 'job') || `#${id}`)
           .join(' / ')}`
       );
       break;
@@ -129,30 +119,30 @@ export function refOptions(data: RomData, kind: RefKind): RefOption[] {
     case 'formation':
       options = data.formationList.map((f) => ({
         id: f.id,
-        name: getFormationName(data, f.id) || `Formation #${f.id}`,
+        name: getFormationName(data, f.id) || referenceName('formation', f.id),
       }));
       break;
     case 'jobRequirement':
       options = data.jobRequirementList.map((r) => ({
         id: r.id,
-        name: `#${r.id}: ${nameAt(data.jobNames, r.jobId) || `Job #${r.jobId}`}`,
+        name: `#${r.id}: ${nameAt(data.jobNames, r.jobId, 'job') || referenceName('job', r.jobId)}`,
       }));
       break;
     case 'bazaarSet':
       options = textOptions(data.bazaarSetNames);
       break;
     case 'auctionPrizeTable':
-      options = data.auctionPrizeTableList.map((t) => ({ id: t.id, name: `Prize Table #${t.id}` }));
+      options = data.auctionPrizeTableList.map((t) => ({ id: t.id, name: referenceName('auctionPrizeTable', t.id) }));
       break;
     case 'face':
-      options = data.unitFaces.map((f) => ({ id: f.id, name: `Face #${f.id}` }));
+      options = data.unitFaces.map((f) => ({ id: f.id, name: referenceName('face', f.id) }));
       break;
     case 'topSprite':
-      options = data.topSprites.map((s) => ({ id: s.id, name: `Top Sprite #${s.id}` }));
+      options = data.topSprites.map((s) => ({ id: s.id, name: referenceName('topSprite', s.id) }));
       break;
     case 'unitSprite':
-      options = data.unitSstList.map((_, i) => ({ id: i, name: `Unit Sprite #${i}` }));
-      options.unshift({ id: -1, name: '(none)' });
+      options = data.unitSstList.map((_, i) => ({ id: i, name: referenceName('unitSprite', i) }));
+      options.unshift({ id: -1, name: t('ref.none') });
       break;
     case 'region':
       options = textOptions(data.regionNames);
@@ -166,18 +156,30 @@ export function refOptions(data: RomData, kind: RefKind): RefOption[] {
     case 'quest':
       options = data.questDataList.map((q) => ({
         id: q.id,
-        name: questName(data, q.id) || `Quest #${q.id}`,
+        name: questName(data, q.id) || referenceName('quest', q.id),
       }));
       break;
   }
-  perData.set(kind, options);
-  return options;
+  const categories: Partial<Record<RefKind, string>> = {
+    job: 'job', jobName: 'job', ability: 'ability', item: 'item',
+    region: 'region', location: 'location', character: 'character', law: 'law',
+    quest: 'quest', bazaarSet: 'bazaar',
+  };
+  const category = categories[kind];
+  return category ? options.map((option) => ({ ...option, name: gameName(category, option.name) })) : options;
 }
 
 const resist = () => en(JobElementalResistance);
 
 const common: Record<string, FieldMeta> = {
   race: en(Race),
+  race1: en(Race),
+  race2: en(Race),
+  race3: en(Race),
+  race4: en(Race),
+  race5: en(Race),
+  race6: en(Race),
+
   gender: en(JobGender),
   moveType: en(JobMoveType),
   movablePlaces: en(JobMovablePlaces),

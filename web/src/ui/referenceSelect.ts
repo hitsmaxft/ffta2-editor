@@ -132,7 +132,7 @@ export function enumInput(
   const select = el('select', { class: 'enum-input' });
   let known = false;
   for (const item of enumeration.values) {
-    const option = el('option', { value: String(item.value), text: `${enumLabel(item.name, item.name)} (#${item.value})` });
+    const option = el('option', { value: String(item.value), text: `${enumLabel(item.name, item.name)} (#${item.value})`, title: item.name });
     if (item.value === current) known = true;
     select.append(option);
   }

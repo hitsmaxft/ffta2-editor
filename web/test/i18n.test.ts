@@ -15,7 +15,7 @@ describe('UI internationalization', () => {
     expect(messageTableName(1, 'Job names')).toBe('职业名');
     expect(fieldLabel('move', 'Move')).toBe('移动力');
     expect(fieldLabel('hpBase', 'HP Base')).toBe('HP 基础');
-    expect(enumLabel('HUME', 'HUME')).toBe('人类');
+    expect(enumLabel('HUME', 'HUME')).toBe('修姆');
     expect(enumLabel('WEAK', 'WEAK')).toBe('弱');
     expect(t('status.loadedEntries', { name: 'rom.nds', count: 3 })).toContain('rom.nds');
   });

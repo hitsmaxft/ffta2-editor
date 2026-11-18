@@ -1,5 +1,7 @@
-// Lightweight UI internationalization. Game data names/field identifiers are
-// not translated; only the editor chrome and hints are.
+// Display-only UI localization; never changes model keys or ROM strings.
+import { extraFieldLabels } from './fieldLabels';
+import { extraEnumLabels } from './enumLabels';
+import { gameTerms } from './gameTerms';
 
 export type Language = 'en' | 'zh-CN';
 
@@ -7,6 +9,7 @@ const en = {
   'lang.label': 'Language',
   'group.other': 'Other',
   'ref.noMatches': 'No matches',
+  'ref.none': '(none)',
   'ref.unknown': 'unknown',
   'group.visuals': 'Visuals',
   'group.references': 'References',
@@ -115,6 +118,7 @@ const zh: Record<Key, string> = {
   'lang.label': '语言',
   'group.other': '其他',
   'ref.noMatches': '没有匹配项',
+  'ref.none': '（无）',
   'ref.unknown': '未知',
   'group.visuals': '外观',
   'group.references': '关联数据',
@@ -178,8 +182,8 @@ const zh: Record<Key, string> = {
   'tab.lawRequirements': '法则剧情条件',
   'tab.formations': '编成',
   'tab.quests': '任务',
-  'tab.bazaar': '商店',
-  'tab.bazaarRecipes': '商店配方',
+  'tab.bazaar': '合成装备',
+  'tab.bazaarRecipes': '合成配方',
   'tab.auctions': '拍卖',
   'tab.auctionPrizes': '拍卖奖品',
   'tab.auctionGrandPrizes': '拍卖大奖',
@@ -247,10 +251,10 @@ const zhFieldLabels: Record<string, string> = {
   move: '移动力', jump: '跳跃力', hpBase: 'HP 基础', hpGrowth: 'HP 成长',
   mpBase: 'MP 基础', mpGrowth: 'MP 成长', speedBase: '速度基础', speedGrowth: '速度成长',
   attackBase: '攻击基础', attackGrowth: '攻击成长', defenseBase: '防御基础', defenseGrowth: '防御成长',
-  magickBase: '魔力基础', magickGrowth: '魔力成长', resistanceBase: '抗性基础', resistanceGrowth: '抗性成长',
+  magickBase: '魔力基础', magickGrowth: '魔力成长', resistanceBase: '魔防御基础', resistanceGrowth: '魔防御成长',
   fireResistance: '火抗性', airResistance: '风抗性', earthResistance: '地抗性', waterResistance: '水抗性',
   iceResistance: '冰抗性', electricityResistance: '雷抗性', holyResistance: '圣抗性', darkResistance: '暗抗性',
-  evasion: '回避', resilience: '韧性', abilitySet: '技能组', unarmedBonus: '徒手加成',
+  evasion: '回避', resilience: '耐性', abilitySet: '技能组', unarmedBonus: '徒手加成',
   raceSomethingMaybe: '种族相关值', propertyFlags: '属性标志', equipFlags: '装备标志',
   abilityHelp: '技能帮助文本', abilityElement: '技能属性', mpCost: 'MP 消耗', power: '威力',
   weaponRequirement: '武器需求', specialRequirement: '特殊需求', rangeAOEType: '范围/AOE 类型',
@@ -264,7 +268,7 @@ const zhFieldLabels: Record<string, string> = {
   equipmentType: '装备类型', notName: '非名称值', element: '属性', equipmentLocation: '装备位置',
   palette: '调色板', sprite: '精灵', attackEffect: '攻击效果', hitEffect: '命中效果', hitSound: '命中音效',
   buy: '买入价', sell: '卖出价', bonusEffect: '附加效果', attack: '攻击', defense: '防御',
-  magick: '魔力', resistance: '抗性', speed: '速度', jobGroup1: '职业组 1', jobGroup2: '职业组 2',
+  magick: '魔力', resistance: '魔防御', speed: '速度', jobGroup1: '职业组 1', jobGroup2: '职业组 2',
   jobGroup3: '职业组 3', ability1: '技能 1', ability2: '技能 2', ability3: '技能 3',
   storyProgress: '剧情进度', category: '类别', rank: '等级', item1: '道具 1', item2: '道具 2',
   item3: '道具 3', item4: '道具 4',
@@ -333,21 +337,21 @@ const zhEnumLabels: Record<string, string> = {
   CAN_STAND_ON_WATER: '可在水面行走', CAN_FLOAT_OVER_WATER: '可漂浮过水面', DUMMY: '占位',
   WEAK: '弱', NEUTRAL: '普通', HALF: '半减', NULL: '无效', ABSORB: '吸收',
   FIRE: '火', WIND: '风', EARTH: '地', WATER: '水', ICE: '冰', THUNDER: '雷', HOLY: '圣', DARK: '暗',
-  HUME: '人类', BANGAA: '邦加族', NU_MOU: '恩莫族', VIERA: '维埃拉族', MOOGLE: '莫古利族',
-  SEEQ: '希克族', GRIA: '古利亚族', BAKNAMY: '巴克纳姆', SPRITE: '精灵', LAMIA: '拉米亚',
+  HUME: '修姆', BANGAA: '邦伽', NU_MOU: '恩莫', VIERA: '维艾拉', MOOGLE: '莫古利',
+  SEEQ: '席克', GRIA: '格丽亚', BAKNAMY: '巴克纳姆', SPRITE: '精灵', LAMIA: '拉米亚',
   WOLF: '狼', DREAMHARE: '梦兔', WEREWOLF: '狼人', ANTLION: '蚁狮', SHELLING: '贝壳怪',
   MALBORO: '魔界花', TOMATO: '番茄怪', COCKATRICE: '鸡蛇兽', CHOCOBO: '陆行鸟', FLAN: '果冻',
   BOMB: '炸弹', ZOMBIE: '僵尸', GHOST: '幽灵', DEATHSCYTHE: '死神', FLOATING_EYE: '浮游眼',
   AHRIMAN: '阿利曼', TONBERRY: '冬贝利', HEADLESS: '无头骑士', BEHEMOTH: '贝希摩斯',
   MAGICK_POT: '魔法壶', DRAKE: '龙', MIMIC: '模仿怪', YOWIE: '尤威', RAFFLESIA: '大王花',
-  DEMON_WALL: '恶魔墙', NEUKHIA: '纽克西亚', UPSILON: '厄普西隆',
-  KNIFE: '小刀', SWORD: '剑', BLADE: '刀', SABER: '军刀', KNIGHTSWORD: '骑士剑', RAPIER: '刺剑',
-  GREATSWORD: '大剑', BROADSWORD: '阔剑', KATANA: '武士刀', SPEAR: '枪', ROD: '法杖', STAFF: '杖',
-  POLE: '长棍', KNUCKLES: '拳套', BOW: '弓', GREATBOW: '大弓', GUN: '枪械', INSTRUMENT: '乐器',
-  HAND_CANNON: '手炮', GRENADE: '手雷', AXE: '斧', HAMMER: '锤', MACE: '锤矛', CARD: '卡片',
-  BOOK: '书', SHIELD: '盾', HELM: '头盔', HAIR_ACCESSORY: '发饰', HAT: '帽子',
-  HEAVY_ARMOR: '重甲', LIGHT_ARMOR: '轻甲', ROBE: '长袍', BOOTS: '靴子', GLOVES: '手套',
-  ACCESSORY: '饰品', HANDS: '手', HEAD: '头', ARMOR: '身体',
+  DEMON_WALL: '恶魔墙', NEUKHIA: '奴其亚', UPSILON: '厄普西隆',
+  KNIFE: '小刀', SWORD: '剑', BLADE: '宽剑', SABER: '军刀', KNIGHTSWORD: '骑士剑', RAPIER: '刺突剑',
+  GREATSWORD: '大剑', BROADSWORD: '宽刃剑', KATANA: '刀', SPEAR: '枪', ROD: '魔杖', STAFF: '杖',
+  POLE: '棒', KNUCKLES: '拳套', BOW: '弓', GREATBOW: '刚弓', GUN: '铳', INSTRUMENT: '乐器',
+  HAND_CANNON: '大炮', GRENADE: '手榴弹', AXE: '斧', HAMMER: '锤', MACE: '锡杖', CARD: '扑克牌',
+  BOOK: '书物', SHIELD: '盾', HELM: '头盔', HAIR_ACCESSORY: '缎带', HAT: '帽子',
+  HEAVY_ARMOR: '铠', LIGHT_ARMOR: '服', ROBE: '长袍', BOOTS: '靴子', GLOVES: '手套',
+  ACCESSORY: '饰物', HANDS: '手', HEAD: '头', ARMOR: '身体',
   MAGICITE: '魔石', METALS: '金属', SKINS: '皮革', BONES: '骨头', FLORA: '植物', TIMBER: '木材',
   PHILTRES: '药液', CLOTH: '布料', ZERO_STAR: '0 星', ONE_STAR: '1 星', TWO_STAR: '2 星', THREE_STAR: '3 星',
   BLACKFROST: '黑霜月', SKYFROST: '天霜月', GREENFIRE: '绿火月', BLOODFIRE: '血火月',
@@ -355,17 +359,31 @@ const zhEnumLabels: Record<string, string> = {
   ASHLEAF: '灰叶月', MISTLEAF: '雾叶月', EMBERLEAF: '烬叶月', PLUMFROST: '梅霜月',
   INFINITE_LINE: '无限直线', LINE: '直线', SURROUNDING_CROSS: '周围十字', ALL_UNITS: '全体单位',
   CONE: '扇形', WEAPON: '武器', SELF: '自身', ALL: '全部', ALLY: '同伴', FOE: '敌人',
-  REVIVE: '复活', MAGICK_FRENZY: '魔法狂暴', NATURAL_SELECTION: '自然选择', MIX_MAYBE: '调合',
-  THROW_ITEM: '投掷道具', GIL_TOSS: '投掷金币', MIRROR_ITEM: '镜像道具', DOUBLECAST: '双重咏唱',
+  REVIVE: '复活', MAGICK_FRENZY: '魔法爆击', NATURAL_SELECTION: '生态之书', MIX_MAYBE: '调合（推测）',
+  THROW_ITEM: '投掷道具', GIL_TOSS: '投掷金币', MIRROR_ITEM: '镜像道具', DOUBLECAST: '连续魔法',
   CONTROL_MONSTER: '控制怪物',
 };
 
 export function fieldLabel(key: string, fallback: string): string {
-  return currentLanguage === 'zh-CN' ? (zhFieldLabels[key] ?? fallback) : fallback;
+  if (currentLanguage !== 'zh-CN') return fallback;
+  if (zhFieldLabels[key] ?? extraFieldLabels[key]) return zhFieldLabels[key] ?? extraFieldLabels[key];
+  const unknown = /^(?:_0x|ability_0x)([0-9a-f]+)$/i.exec(key);
+  return unknown ? `未知 0x${unknown[1]}` : fallback;
 }
 
 export function enumLabel(name: string, fallback: string): string {
-  return currentLanguage === 'zh-CN' ? (zhEnumLabels[name] ?? fallback) : fallback;
+  if (currentLanguage !== 'zh-CN') return fallback;
+  const label = zhEnumLabels[name] ?? extraEnumLabels[name];
+  if (label) return label;
+  const unknown = /^_0x([0-9a-f]+)$/i.exec(name);
+  if (unknown) return `未知 0x${unknown[1]}`;
+  if (name.startsWith('TARGET_')) {
+    const uncertain = name.endsWith('_MAYBE');
+    const target = name.slice(7).replace(/_MAYBE$/, '');
+    const translated = enumLabel(target, '');
+    if (translated) return `目标：${translated}${uncertain ? '（推测）' : ''}`;
+  }
+  return fallback;
 }
 
 const dictionaries: Record<Language, Record<Key, string>> = { en, 'zh-CN': zh };
@@ -418,4 +436,25 @@ export function applyTranslations(root: ParentNode = document): void {
   root.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach((node) => {
     node.title = t(node.dataset.i18nTitle as Key);
   });
+}
+
+// Exact, category-scoped English-name lookup. No ID substitution: modified ROM
+// names, Chinese names and unmapped names pass through unchanged.
+export function gameName(category: string, original: string): string {
+  if (currentLanguage !== 'zh-CN') return original;
+  const terms = Object.hasOwn(gameTerms, category) ? gameTerms[category] : undefined;
+  const translated = terms && Object.hasOwn(terms, original) ? terms[original] : undefined;
+  return translated ? `${translated}（${original}）` : original;
+}
+
+export function referenceName(kind: string, id: number): string {
+  const labels: Record<string, [string, string]> = {
+    activeAbility: ['Ability', '技能'], equipment: ['Equipment', '装备'], loot: ['Loot', '素材'],
+    abilitySet: ['Ability Set', '技能组'], jobGroup: ['Job Group', '职业组'],
+    formation: ['Formation', '编成'], job: ['Job', '职业'], quest: ['Quest', '任务'],
+    auctionPrizeTable: ['Prize Table', '奖品表'], face: ['Face', '头像'],
+    topSprite: ['Top Sprite', '顶部精灵'], unitSprite: ['Unit Sprite', '单位精灵'],
+  };
+  const pair = labels[kind];
+  return `${pair ? pair[currentLanguage === 'zh-CN' ? 1 : 0] : kind} #${id}`;
 }

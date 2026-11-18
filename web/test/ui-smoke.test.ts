@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { loadRom } from '../src/data/load';
 import { loadAll } from '../src/data/orchestration';
 import { fixturesDir } from './helpers';
+import { setLanguage } from '../src/ui/i18n';
 import {
   textTab,
 } from '../src/ui/textEditor';
@@ -37,6 +38,31 @@ describe.skipIf(!romPath)('web UI smoke test on a real ROM', () => {
       const container = document.createElement('div');
       tab.render(container, data, () => {});
       expect(container.childElementCount, tab.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('renders all tabs in Chinese without modifying ROM model data', () => {
+    setLanguage('zh-CN');
+    try {
+      const data = loadRom(rom);
+      loadAll(data);
+      const originalNames = data.jobNames.map((entry) => entry.string);
+      const originalBytes = data.jobDataList[1].toBytes();
+      for (const tab of TABS) {
+        if (!tab.available(data)) continue;
+        const container = document.createElement('div');
+        tab.render(container, data, () => { throw new Error('Rendering marked data dirty'); });
+        expect(container.childElementCount, tab.id).toBeGreaterThan(0);
+        if (tab.id === 'jobs') {
+          expect(container.textContent).toContain('可转职');
+          expect(container.textContent).toContain('士兵');
+        }
+        if (tab.id === 'abilities') expect(container.textContent).toContain('默认已掌握');
+      }
+      expect(data.jobNames.map((entry) => entry.string)).toEqual(originalNames);
+      expect(data.jobDataList[1].toBytes()).toEqual(originalBytes);
+    } finally {
+      setLanguage('en');
     }
   });
 
